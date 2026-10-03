@@ -82,7 +82,7 @@ async function pushColumn(
         if (!column.song.artwork) {
             column.song = {
                 ...column.song,
-                ...(await musicInfo[column.song.platform](column.song.id)),
+                ...(await musicInfo[column.song.platform as keyof typeof musicInfo](String(column.song.id))),
             } as SongItem;
         }
         // 更新栏目时间

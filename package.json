@@ -8,6 +8,8 @@
     "dev:web": "bun vite",
     "dev:api": "bun run --hot backend/adapter/bun.ts",
     "build": "vue-tsc -b && vite build",
+    "dev:cf": "vite build && wrangler pages dev",
+    "deploy:cf": "bun run build && wrangler pages deploy",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -31,10 +33,12 @@
     "@vue/tsconfig": "^0.9.1",
     "autoprefixer": "^10.6.1",
     "concurrently": "^10.0.5",
+    "esbuild": "^0.28.2",
     "postcss": "^8.5.28",
     "tailwindcss": "^4.3.3",
     "typescript": "~6.0.2",
     "vite": "^8.3.0",
-    "vue-tsc": "^3.3.11"
+    "vue-tsc": "^3.3.11",
+    "wrangler": "^4.147.0"
   }
 }

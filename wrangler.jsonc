@@ -2,7 +2,8 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "strack",
   "compatibility_date": "2025-08-03",
-  "main": "./src/index.tsx",
+  // Cloudflare Pages 配置：单页应用产物目录（后端由 functions/api/[[route]].ts 接管 /api/*）
+  "pages_build_output_dir": "./dist",
   // Cloudflare KV 绑定：storage.ts 中的 unstorage 驱动通过 bindingName: "CF_KV" 使用
   "kv_namespaces": [
     {
@@ -11,7 +12,7 @@
       "preview_id": "<替换为你的预览KV命名空间ID>"
     }
   ],
-  // 环境变量（非敏感配置；敏感信息用 `wrangler secret put` 设置）
+  // 环境变量（非敏感配置；敏感信息用 `wrangler pages secret put` 设置）
   "vars": {
     "ALLOWED_ORIGINS": "*"
   }

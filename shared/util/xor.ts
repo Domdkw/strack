@@ -95,7 +95,9 @@ export const textEncrypt = (text: string, pkey: string) => {
     // 逐字节转二进制字符串，避免 TextDecoder 对非 UTF-8 字节的有损替换
     const encrypted = Array.from(u8a, (b: number) => String.fromCharCode(b)).join('');
     const key = CryptoJS.enc.Utf8.parse(ckey[1]);
-    return AES.encrypt(encrypted, key
+    // 加密内容是任意二进制字节（Latin-1），必须显式按 Latin1 解析，
+    // 否则默认按 UTF-8 解析会产生不同的字节序列，解密端无法还原
+    return AES.encrypt(CryptoJS.enc.Latin1.parse(encrypted), key
         ,{
             mode: CryptoJS.mode.ECB,
             padding: CryptoJS.pad.Pkcs7,
@@ -109,7 +111,9 @@ export const textDecrypt = (encrypted: string, pkey: string) => {
             mode: CryptoJS.mode.ECB,
             padding: CryptoJS.pad.Pkcs7,
         }
-    ).toString(CryptoJS.enc.Utf8);
+    // 输出同理：解密结果是任意二进制字节，按 Latin1 还原成字符串
+    // 按 Utf8 输出会在字节序列非法时抛 "Malformed UTF-8 data"
+    ).toString(CryptoJS.enc.Latin1);
     const encryptedU8a = Uint8Array.from(decrypted, (c: string) => c.charCodeAt(0) & 0xFF);
     return decrypt.decryptU8a(encryptedU8a, pkey);
 }

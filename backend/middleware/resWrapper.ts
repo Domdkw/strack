@@ -8,7 +8,7 @@ const commonResWrapper = createMiddleware(async (c, next) => {
     c.res.headers.set('X-Strack-v', pkg.version);
 
     try {
-        const rawJson: Record<string, unknown> & { code?: number } = await c.res.json();
+        const rawJson = await c.res.json() as Record<string, unknown> & { code?: number };
         if ('code' in rawJson) {
             rawJson.success = rawJson.code === 0 || rawJson.code === undefined;
         }

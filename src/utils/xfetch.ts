@@ -25,8 +25,17 @@ const xfetch = ofetch.create({
         console.error("[xfetch] response error:", request, response.status, response._data);
     },
     onResponse({ response }) {
-        // 响应为 AES+XOR 加密的 base64 字符串，先解密再解析
-        const decrypted = textDecrypt(response._data as string, response.headers.get('X-Encrypt-Key') || '');
+        // 304（etag 协商缓存）响应体为空；未带 X-Encrypt-Key 的响应（如中间件
+        // 直接放行的非 JSON 流）不是密文，都跳过解密，避免 JSON.parse('') 报错
+        const encryptKey = response.headers.get('X-Encrypt-Key');
+        if (response.status === 304 || !encryptKey || typeof response._data !== 'string' || response._data === '') {
+            return;
+        }
+        const decrypted = textDecrypt(response._data, encryptKey);
+        if (!decrypted) {
+            console.error('[xfetch] decrypt failed:', response.status, response._data.slice(0, 100));
+            return;
+        }
         const raw = JSON.parse(decrypted) as ApiData<any>;
         console.log(raw);
         const code = raw.code;
