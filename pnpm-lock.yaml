@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@hono/ua-blocker':
+        specifier: ^0.1.42
+        version: 0.1.42(hono@4.13.12)
       '@tailwindcss/vite':
         specifier: ^4.3.3
         version: 4.3.3(vite@8.3.1(@types/node@24.19.0)(jiti@2.7.0))
@@ -97,6 +100,11 @@ packages:
 
   '@cloudflare/workers-types@5.20261003.1':
     resolution: {integrity: sha512-Uii0J5qUd/R6lIDK/u0Sw8dEi7oI3ljXw7EDybuPntoXg2Yy5Y9H9UeNQ5R87oQ/Q4jq6uEJmYOOFQ3Z7C94lA==}
+
+  '@hono/ua-blocker@0.1.42':
+    resolution: {integrity: sha512-AqRr+pXU2bBlCOokiYyJbDtWPx48IA7675MMrIhz2W2vptmyhAO/CIQHpR0bE8R5HHxuOgWJ7TJWyEgKjF308A==}
+    peerDependencies:
+      hono: '>=4.0.0'
 
   '@jridgewell/gen-mapping@0.3.13':
     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
@@ -1107,6 +1115,10 @@ snapshots:
       '@babel/helper-validator-identifier': 7.29.7
 
   '@cloudflare/workers-types@5.20261003.1': {}
+
+  '@hono/ua-blocker@0.1.42(hono@4.13.12)':
+    dependencies:
+      hono: 4.13.12
 
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:

@@ -1,4 +1,5 @@
 import { ofetch } from "ofetch";
+import { textDecrypt } from "../../shared/util/xor.ts";
 import type { ApiData } from "../../shared/types/base.d.ts";
 
 import xhrAccess from "./xhrAccess";
@@ -24,7 +25,10 @@ const xfetch = ofetch.create({
         console.error("[xfetch] response error:", request, response.status, response._data);
     },
     onResponse({ response }) {
-        const raw = response._data as ApiData<any>;
+        // 响应为 AES+XOR 加密的 base64 字符串，先解密再解析
+        const decrypted = textDecrypt(response._data as string, response.headers.get('X-Encrypt-Key') || '');
+        const raw = JSON.parse(decrypted) as ApiData<any>;
+        console.log(raw);
         const code = raw.code;
         if (code !== 0) {
             console.error("[xfetch] api error:", raw.error);

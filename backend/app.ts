@@ -61,6 +61,9 @@ app.use(
     compress()
 );
 
+// API 路由
+app.route('/api', apiRoutes);
+
 /**
  * 配置内存缓存中间件
  * max: 最大缓存项数
@@ -73,9 +76,6 @@ app.use(
         ttl: CACHE_SECONDS * 1000,
     })
 );
-
-// API 路由
-app.route('/api', apiRoutes);
 
 // 404 处理
 app.notFound(c => {
