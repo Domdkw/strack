@@ -4,7 +4,6 @@ import { musicSearch } from "../module/musicSearch";
 import { musicUrl } from "../module/musicUrl";
 import CryptoJS from "crypto-js";
 import type { Context } from "hono";
-import type { MusicSearch, MusicUrl } from "../../shared/types/api/music.d.ts";
 
 const _ = new Hono();
 const [search, strategy] = [
@@ -16,14 +15,14 @@ _.use(platformAccess);
 
 search
     .get('/song/v1.0', async (c) => {
-        const { text, page, size, platform } = c.req.query() as MusicSearch.Req.Song;
-        const res = await musicSearch[platform as Platform](text, page, size);
+        const { text, page, size, platform } = c.req.query();
+        const res = await musicSearch[platform as Platform](text, Number(page), Number(size));
         return c.json({ code: 0, ...res } as any);
     });
 ;
 
 const _getMusicUrl = async (c: Context) => {
-    const { id, isVip, extStr, platform } = c.req.query() as MusicUrl.Req.Song;
+    const { id, isVip, extStr, platform } = c.req.query();
     const ext = extStr ? JSON.parse(CryptoJS.enc.Utf8.stringify(CryptoJS.enc.Base64.parse(extStr))) : {}, vip = !!isVip;
     return await musicUrl[platform as Platform](id, ext, vip);
 }

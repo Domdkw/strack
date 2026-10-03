@@ -10,7 +10,7 @@ const commonResWrapper = createMiddleware(async (c, next) => {
     try {
         const rawJson = await c.res.json();
         if ('code' in rawJson) {
-            rawJson.success = rawJson.code === 0;
+            rawJson.success = rawJson.code === 0 || rawJson.code === undefined;
         }
 
         c.res = new Response(JSON.stringify(rawJson), {
