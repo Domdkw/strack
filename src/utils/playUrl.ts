@@ -22,7 +22,8 @@ export async function getPlayRes(song: SongItem) {
         id: song.id,
         isVip: song.isVip || false,
         platform: song.platform,
-        extStr: getExt(song) || undefined,
+        extInfo: getExt(song) || undefined,
+        fullInfo: true,
     }
     return await xfetch('/api/music/strategy/listen/url/v1.0', { params });
 }

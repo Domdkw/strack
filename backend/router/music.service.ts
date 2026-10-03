@@ -1,7 +1,8 @@
 import { Hono } from "hono";
-import { platformAccess, Platform, signAccess } from "../middleware/reqAccess";
+import { platformAccess, type Platform, signAccess } from "../middleware/reqAccess";
 import { musicSearch } from "../module/musicSearch";
 import { musicUrl } from "../module/musicUrl";
+import { musicInfo } from "../module/musicInfo";
 import CryptoJS from "crypto-js";
 import type { Context } from "hono";
 
@@ -21,21 +22,36 @@ search
     });
 ;
 
-const _getMusicUrl = async (c: Context) => {
-    const { id, isVip, extStr, platform } = c.req.query();
-    const ext = extStr ? JSON.parse(CryptoJS.enc.Utf8.stringify(CryptoJS.enc.Base64.parse(extStr))) : {}, vip = !!isVip;
-    return await musicUrl[platform as Platform](id, ext, vip);
+const parseExt = (extInfo: string) => {
+        return extInfo ? JSON.parse(CryptoJS.enc.Utf8.stringify(CryptoJS.enc.Base64.parse(extInfo))) : {};
+}
+const getMusicUrl = async (c: Context) => {
+    const { id, isVip, extInfo, platform, fullInfo } = c.req.query();
+    const ext = parseExt(extInfo), vip = !!isVip;
+    return {
+        ...(await musicUrl[platform as Platform](id, ext, vip)),
+        ...(Boolean(fullInfo) ? await musicInfo[platform as Platform](id, ext) : {})
+    };
+}
+const getMusicFullInfo = async (c: Context) => {
+    const { id, extInfo, platform } = c.req.query();
+    const ext = parseExt(extInfo);
+    return await musicInfo[platform as Platform](id, ext);
 }
 
 strategy
     .use(signAccess)
     .get('/listen/url/v1.0', async (c) => c.json({
         code: 0,
-        data: await _getMusicUrl(c)
+        data: await getMusicUrl(c)
     }))
     //.get('/listen/302/v1.0', async (c) => {
     //    c.redirect((await _getMusicUrl(c)).url || '', 302);
     //})
+    .get('/fullinfo/v1.0', async (c) => c.json({
+        code: 0,
+        data: await getMusicFullInfo(c)
+    }))
 ;
 
 // route start

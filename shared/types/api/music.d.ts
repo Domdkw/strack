@@ -17,8 +17,9 @@ export namespace MusicUrl {
         type Song = {
             id: string|number;
             isVip?: boolean;
-            extStr?: string;
+            extInfo?: string;
             platform: Platform;
+            fullInfo?: boolean;
         }
     }
 }

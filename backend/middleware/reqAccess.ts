@@ -1,5 +1,4 @@
 import { createMiddleware } from "hono/factory";
-import type { Context, Next } from 'hono';
 import { signV001 } from '../../shared/util/sign/v001';
 
 export const platforms = ['migu', 'ncm'] as const;//, 'qq', 'kuwo', 'kugou'

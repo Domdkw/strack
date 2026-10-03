@@ -7,10 +7,10 @@ function isVip(it: any) {
 function getSingerName(singerList: any[]) {
     return singerList?.map((singer: any) => singer.name).join('/') || '';
 }
-function formatSize(size: string) {
-    const num = Math.round(Number(size) / 100000);
-    return `${num / 10}MB`;
-}
+//function formatSize(size: string) {
+//    const num = Math.round(Number(size) / 100000);
+//    return `${num / 10}MB`;
+//}
 export function formatAlbumInfoItem(it: any) {
     return {
         id: it.contentId,
@@ -30,6 +30,7 @@ export function formatAlbumInfoItem(it: any) {
     };
 }
 export function formatMusicItem(it: any): SongItem {
+    it = it.song;
     return {
         platform: 'migu',
         id: it.contentId,

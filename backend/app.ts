@@ -3,7 +3,7 @@ import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import { memCache } from 'hono-mem-cache';
 import { compress } from 'hono/compress';
-import { env, getRuntimeKey } from 'hono/adapter';
+import { env } from 'hono/adapter';
 import { etag, RETAINED_304_HEADERS } from 'hono/etag';
 import apiRoutes from './router/index';
 

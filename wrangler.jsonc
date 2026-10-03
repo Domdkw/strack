@@ -2,5 +2,17 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "strack",
   "compatibility_date": "2025-08-03",
-  "main": "./src/index.tsx"
+  "main": "./src/index.tsx",
+  // Cloudflare KV 绑定：storage.ts 中的 unstorage 驱动通过 bindingName: "CF_KV" 使用
+  "kv_namespaces": [
+    {
+      "binding": "CF_KV",
+      "id": "<替换为你的KV命名空间ID>",
+      "preview_id": "<替换为你的预览KV命名空间ID>"
+    }
+  ],
+  // 环境变量（非敏感配置；敏感信息用 `wrangler secret put` 设置）
+  "vars": {
+    "ALLOWED_ORIGINS": "*"
+  }
 }
