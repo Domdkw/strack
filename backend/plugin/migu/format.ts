@@ -30,7 +30,6 @@ export function formatAlbumInfoItem(it: any) {
     };
 }
 export function formatMusicItem(it: any): SongItem {
-    it = it.song;
     return {
         platform: 'migu',
         id: it.contentId,
@@ -38,7 +37,7 @@ export function formatMusicItem(it: any): SongItem {
         artist: getSingerName(it.singerList),
         album: it.album,
         duration: it.duration,
-        artwork: "https://d.musicapp.migu.cn" + it.img3,
+        artwork: "https://d.musicapp.migu.cn" + it.img1,
         albumId: it.albumId,
         lrc: encryptLrcUrl(it.lrcUrl, 'ahr3k69s'),
         //vip

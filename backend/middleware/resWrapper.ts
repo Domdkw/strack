@@ -9,6 +9,9 @@ const commonResWrapper = createMiddleware(async (c, next) => {
 
     try {
         const rawJson = await c.res.json() as Record<string, unknown> & { code?: number };
+        if (rawJson.code === undefined){
+            rawJson.code = 0;
+        }
         if ('code' in rawJson) {
             rawJson.success = rawJson.code === 0 || rawJson.code === undefined;
         }

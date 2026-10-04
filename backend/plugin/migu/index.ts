@@ -10,7 +10,12 @@ export async function miguSearch(text: string, page: number, size: number) {
     });
     const isEnd = !res.data.hasNext;
     return {
-        data: res.data.items.map((item: any) => formatMusicItem(item)),
+        data: res.data.items.map((item: any) => formatMusicItem(item.song)),
         isEnd,
     };
 }
+export async function miguPlayInfo(id: string) {
+    const res = await ofetch(`https://app.c.nf.migu.cn/resource/song/by-contentids/v2.0?contentId=${id}`);
+    return formatMusicItem(res.data[0])
+}
+

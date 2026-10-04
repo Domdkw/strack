@@ -1,7 +1,14 @@
 import { ofetch } from "ofetch";
+import type { SongItem } from "../../../shared/types/musicItem";
 
 interface NcmDetail {
-    songs: { album: { picUrl: string } }[];
+    songs: {
+        id: string;
+        album: { name: string; picUrl: string };
+        artists: { name: string }[];
+        name: string;
+        duration: number;
+    }[];
 }
 
 export async function ncmPlayInfo(id: string) {
@@ -10,7 +17,16 @@ export async function ncmPlayInfo(id: string) {
         params: { ids: '[' + id + ']' },
         parseResponse: JSON.parse,
     });
-    return {
-        artwork: res.songs[0].album.picUrl,
+    const data: SongItem = {
+        platform: 'ncm', // 平台
+        id: res.songs[0].id, // 唯一id
+        artist: res.songs[0].artists.map((item) => item.name).join('/'), // 作者
+        album: res.songs[0].album.name,
+        title: res.songs[0].name,
+        duration: Number(res.songs[0].duration)/1000,
+        artwork: res.songs[0].album.picUrl+'??param=100y100',
+        //new
+        artists: res.songs[0].artists,
     };
+    return data;
 }

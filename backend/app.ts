@@ -1,12 +1,9 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
-import { memCache } from 'hono-mem-cache';
 import { env } from 'hono/adapter';
 import { etag, RETAINED_304_HEADERS } from 'hono/etag';
 import apiRoutes from './router/index';
-
-const CACHE_SECONDS = 300; // 5分钟缓存
 
 const app = new Hono();
 
@@ -56,19 +53,6 @@ app.use(
 
 // API 路由
 app.route('/api', apiRoutes);
-
-/**
- * 配置内存缓存中间件
- * max: 最大缓存项数
- * ttl: 缓存过期时间（毫秒）
- */
-app.use(
-    '*',
-    memCache({
-        max: 100,
-        ttl: CACHE_SECONDS * 1000,
-    })
-);
 
 // 404 处理
 app.notFound(c => {

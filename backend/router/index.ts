@@ -5,7 +5,6 @@ import { uaBlocker } from "@hono/ua-blocker";
 import { aiBots } from "@hono/ua-blocker/ai-bots";
 import encryptRes from '../middleware/encryptRes';
 
-
 import musicService from './music.service';
 import orderService from './order.service';
 

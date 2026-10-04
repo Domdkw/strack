@@ -1,17 +1,19 @@
 import type { Storage } from "unstorage";
-import type { SendOrder } from "../../shared/types/api/order";
-import type { SongItem } from "../../shared/types/musicItem";
+import type { SendOrder, ColumnEntry, OrderSong } from "../../shared/types/api/order";
+import { platforms } from "../../shared/types/base";
 import { musicInfo } from "./musicInfo";
 
-type ColumnEntry = SendOrder.Req & { timestamp: number };
+
 const columnCache = new Map<string, { columns: ColumnEntry[], timestamp: number }>();
 
 const CACHE_TTL = 5 * 60 * 1000; // 5小时缓存
-const COLUMN_TTL = 31 * 24 * 60 * 60 * 1000; // 31天缓存
+const MAX_COLUMN = 22; // 最大栏目数，0-21天
+const COLUMN_TTL = MAX_COLUMN * 24 * 60 * 60; // 22天（KV expirationTtl 单位为秒）
+const MAX_ORDER_ITEM = 10; // 最大订单项数
 
 function getOffsetIndex(offsetDay: number){
     const date = new Date();
-    date.setDate(date.getDate() - offsetDay);
+    date.setDate(date.getDate() + offsetDay);
     return date.toLocaleDateString('zh-CN', {
         timeZone: 'Asia/Shanghai',
         year: 'numeric',
@@ -24,36 +26,42 @@ async function getOffsetColumn(offsetDay: number, storage: Storage){
     return await getDateColumn(index, storage);
 }
 
-async function getDateColumn(columnId: string, storage: Storage){
+type ColumnRow = { columns: ColumnEntry[]; timestamp: number };
+type ColumnResult = { data: ColumnRow } | { code: number; error: string };
+
+async function getDateColumn(columnId: string, storage: Storage): Promise<ColumnResult>{
     try{
     const cache = columnCache.get(columnId);
     if (cache){
         //5小时缓存
         const now = Date.now();
         if (now - cache.timestamp < CACHE_TTL)
-            return cache;
+            return { data: cache };
         ;// 缓存过期，从存储中获取栏目
     }
     const strRes = await storage.getItem(columnId); // 从存储中获取栏目
     if (strRes){
-        const remoteRes = typeof strRes === "string" 
-            ? JSON.parse(strRes) || {} 
+        const remoteRes: Record<string, unknown> = typeof strRes === "string"
+            ? JSON.parse(strRes) || {}
             : typeof strRes === "object"
-                ? strRes : {}
+                ? (strRes as Record<string, unknown>) : {}
         ;
 
         if(!remoteRes){
             return {code: 205, error: 'column parse error'};
         }
         // 合并缓存
-        const currentRow = {
+        const currentRow: ColumnRow = {
             columns: (remoteRes.columns || []) as ColumnEntry[], // 覆盖缓存
             timestamp: Date.now() // 更新缓存根时间
         }
         columnCache.set(columnId, currentRow);
         return {data: currentRow};
     }else{
-        return {code: 204, error: 'column not found'};
+        // 无数据时返回空栏目（正常状态，不算错误）
+        const emptyRow: ColumnRow = { columns: [] as ColumnEntry[], timestamp: Date.now() };
+        columnCache.set(columnId, emptyRow);
+        return {data: emptyRow};
     }
     }catch(err){
         const errorMessage = err instanceof Error ? err.message : String(err);
@@ -62,38 +70,79 @@ async function getDateColumn(columnId: string, storage: Storage){
 }
 
 
-const requiredKeys = ['platform', 'id', 'artist', 'album', 'title', 'duration'];//'artwork'
+const requiredKeys = {
+    common: ['className', 'userName', 'userId', 'offsetDay', 'songItem'],
+    songItem: ['id', 'platform'],
+    song: ['platform', 'id', 'artist', 'album', 'title', 'duration']//'artwork'
+};
 async function setColumn(body: SendOrder.Req, storage: Storage){
     const columnKeys = Object.keys(body);
-    if(!requiredKeys.every(key => columnKeys.includes(key))){
-        return {code: 208, msg: 'required keys not found'};
+    const songItemKeys = Object.keys(body.songItem || {});
+    if(!requiredKeys.common.every(key => columnKeys.includes(key) && (body as Record<string, unknown>)[key] !== undefined)){
+        return {code: 208, error: 'common keys not found'};
+    }
+    if(!requiredKeys.songItem.every(key => songItemKeys.includes(key) && (body.songItem as Record<string, unknown>)[key] !== undefined)){
+        return {code: 208, error: 'songItem keys not found'};
+    }
+    const curPlatform = body.songItem.platform;
+    if(!curPlatform || !platforms.includes(curPlatform)){
+        return {code: 210, error: 'songItem platform is invalid'};
     }
     const index = getOffsetIndex(body.offsetDay);
     return await pushColumn(index, body, storage);
 }
-
 async function pushColumn(
     columnId: string,
-    column: SendOrder.Req & { timestamp?: number },
+    column: Omit<SendOrder.Req, 'songItem'> & { songItem?: OrderSong; timestamp?: number },
     storage: Storage,
 ) {
     try {
-        // 从平台获取 full song info
-        if (!column.song.artwork) {
-            column.song = {
-                ...column.song,
-                ...(await musicInfo[column.song.platform as keyof typeof musicInfo](String(column.song.id))),
-            } as SongItem;
-        }
+        // 从平台获取 fullsong info（setColumn 已校验 songItem 必存在）
+        const songItem = column.songItem!;
+        const song = await musicInfo[songItem.platform](
+            String(songItem.id)
+        );
+        //songItem 使用完后删除
+        delete column.songItem;
         // 更新栏目时间
-        const entry: ColumnEntry = { ...column, timestamp: Date.now() };
+        const entry: ColumnEntry = {
+            className: column.className,
+            userName: column.userName,
+            userId: column.userId,
+            offsetDay: column.offsetDay,
+            song: song,
+            followUsers: [],
+            timestamp: Date.now()
+        };
 
         let currentRow = columnCache.get(columnId);
         if (!currentRow) {
-            // 新增栏目
-            currentRow = { columns: [], timestamp: Date.now() };
+            // 缓存未命中时从存储加载，避免覆盖已有栏目
+            const res = await getDateColumn(columnId, storage);
+            if (!('data' in res)) return res;
+            currentRow = res.data;
         }
-        currentRow.columns.push(entry);
+        if(currentRow.columns.length >= MAX_ORDER_ITEM){
+            return {code: 211, error: 'max order item reached'};
+        }
+        // 重复歌曲（同平台同ID）：添加跟随用户而非新增条目
+        const existing = currentRow.columns.find(
+            (col) => col.song && col.song.platform === songItem.platform && String(col.song.id) === String(songItem.id)
+        );
+        if (existing) {
+            // 同一用户不重复跟随
+            const alreadyFollowed = existing.followUsers?.some((u) => u.userId === column.userId);
+            if (!alreadyFollowed) {
+                (existing.followUsers ??= []).push({
+                    className: column.className,
+                    userName: column.userName,
+                    userId: column.userId,
+                });
+            }
+            existing.timestamp = Date.now();
+        } else {
+            currentRow.columns.push(entry);
+        }
         //更新根时间
         currentRow.timestamp = Date.now();
         // cache set
@@ -109,4 +158,29 @@ async function pushColumn(
     }
 }
 
-export { getOffsetColumn, getDateColumn, setColumn };
+
+// 预览用：每天的歌曲摘要（含跟随人数）
+type AllColumnSong = { artwork?: string; title: string; followCount: number };
+type AllColumnDay = { songs: AllColumnSong[]; timestamp: number };
+
+async function getAllColumn(): Promise<Record<string, AllColumnDay>> {
+    const columns: Record<string, AllColumnDay> = {};
+    for(let i = 0; i < MAX_COLUMN; i++){
+        const key = getOffsetIndex(i);
+        const row = columnCache.get(String(key)) || null;
+        if(!row){
+            columns[key] = { songs: [], timestamp: Date.now() };
+            continue;
+        }
+        columns[key] = {
+            songs: row.columns.map(col => ({
+                artwork: col.song.artwork,
+                title: col.song.title,
+                followCount: col.followUsers?.length ?? 0,
+            })),
+            timestamp: row.timestamp,
+        }
+    }
+    return columns;
+}
+export { getOffsetColumn, getDateColumn, setColumn, getAllColumn };

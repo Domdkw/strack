@@ -2,7 +2,7 @@
 import xfetch from "../utils/xfetch";
 import type { MusicSearch } from "../../shared/types/api/music.d.ts";
 import type { SongItem } from "../../shared/types/musicItem.d.ts";
-import type { Platform } from "../../shared/types/base.d.ts";
+import type { Platform } from "../../shared/types/base";
 import { formatTime } from "../utils/formatTime";
 import { usePlayerStore } from "../stores/playerStore";
 
@@ -123,6 +123,12 @@ async function loadMore(): Promise<void> {
                             <span class="hidden min-w-0 w-24 shrink-0 truncate text-right text-xs text-stone-400 md:block">{{ song.artist }}</span>
                             <span class="hidden min-w-0 flex-1 truncate text-xs text-stone-400 sm:block">{{ song.album }}</span>
                             <span class="shrink-0 w-12 text-right font-mono text-xs text-stone-300">{{ formatTime(song.duration) }}</span>
+                            <RouterLink
+                                :to="{ path: '/order/new', query: { id: String(song.id), platform: song.platform } }"
+                                @click.stop
+                                class="shrink-0 border border-stone-200 px-2 py-1 text-xs text-stone-400 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700"
+                                title="点歌"
+                            >点歌</RouterLink>
                         </li>
                     </ul>
                 </template>

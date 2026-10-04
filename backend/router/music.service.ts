@@ -1,15 +1,27 @@
 import { Hono } from "hono";
-import { platformAccess, type Platform, signAccess } from "../middleware/reqAccess";
+import type { Platform } from "../../shared/types/base";
+import { platformAccess, signAccess } from "../middleware/reqAccess";
 import { musicSearch } from "../module/musicSearch";
 import { musicUrl } from "../module/musicUrl";
 import { musicInfo } from "../module/musicInfo";
 import CryptoJS from "crypto-js";
 import type { Context } from "hono";
+import { memCache } from 'hono-mem-cache';
+
+const CACHE_SECONDS = 1 * 60; // 1分钟缓存
 
 const _ = new Hono();
 const [search, strategy] = [
     new Hono(), new Hono(),
 ];
+_.use(
+    '*',
+    memCache({
+        max: 100,
+        ttl: 5 * 60 * 1000,
+    })
+);
+
 // end
 
 _.use(platformAccess);

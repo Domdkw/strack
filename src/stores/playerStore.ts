@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { getPlayRes } from "../utils/playUrl";
+import { getErrorMessage } from "../utils/apiError";
 import type { SongItem } from "../../shared/types/musicItem";
 
 // Audio 实例放在 store 外部，避免被 Vue 响应式代理
@@ -59,9 +60,14 @@ export const usePlayerStore = defineStore('player', {
                 let remoteInfo: SongItem | undefined;
                 let target: string = url || this.song.url || '';
                 if (!target) {
-                    remoteInfo = await getPlayRes(this.song)
-                    target = remoteInfo?.url || '';
-                    this.song = {...this.song, ...remoteInfo};// 合并更新 song 信息
+                    try {
+                        remoteInfo = await getPlayRes(this.song)
+                        target = remoteInfo?.url || '';
+                        this.song = {...this.song, ...remoteInfo};// 合并更新 song 信息
+                    } catch (err) {
+                        // 获取播放地址失败：仅记录，不中断播放流程
+                        console.error('[player] get play url failed:', getErrorMessage(err));
+                    }
                 }
                 if (target && a.src !== target) {
                     a.src = target;

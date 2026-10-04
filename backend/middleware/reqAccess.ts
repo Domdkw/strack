@@ -1,8 +1,7 @@
 import { createMiddleware } from "hono/factory";
 import { signV001 } from '../../shared/util/sign/v001';
+import { type Platform, platforms } from '../../shared/types/base';
 
-export const platforms = ['migu', 'ncm'] as const;//, 'qq', 'kuwo', 'kugou'
-export type Platform = (typeof platforms)[number];
 export const signVersions = ['v001'] as const;
 export type SignVersion = (typeof signVersions)[number];
 

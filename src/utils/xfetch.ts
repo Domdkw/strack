@@ -1,8 +1,9 @@
 import { ofetch } from "ofetch";
 import { textDecrypt } from "../../shared/util/xor.ts";
-import type { ApiData } from "../../shared/types/base.d.ts";
+import type { ApiData } from "../../shared/types/base";
 
 import xhrAccess from "./xhrAccess";
+import { ApiError, translateApiError } from "./apiError";
 
 const xfetch = ofetch.create({
     async onRequest({ request, options }) {
@@ -40,7 +41,9 @@ const xfetch = ofetch.create({
         console.log(raw);
         const code = raw.code;
         if (code !== 0) {
-            console.error("[xfetch] api error:", raw.error);
+            console.error("[xfetch] api error:", code, raw.error);
+            // 业务错误转为中文 ApiError 抛出，由调用方在界面上展示
+            throw new ApiError(code, translateApiError(code, raw.error));
         }
         // ofetch 会忽略 onResponse 返回值，必须直接修改 _data 来解包
         response._data = raw.data;
