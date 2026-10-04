@@ -6,9 +6,9 @@ import { musicInfo } from "./musicInfo";
 
 const columnCache = new Map<string, { columns: ColumnEntry[], timestamp: number }>();
 
-const CACHE_TTL = 5 * 60 * 1000; // 5小时缓存
+const CACHE_TTL = 5 * 60 * 1000; // 栏目内存缓存时长（毫秒），默认 5 小时
 const MAX_COLUMN = 22; // 最大栏目数，0-21天
-const COLUMN_TTL = MAX_COLUMN * 24 * 60 * 60; // 22天（KV expirationTtl 单位为秒）
+const COLUMN_TTL = MAX_COLUMN * 24 * 60 * 60; // KV expirationTtl（秒），默认 22 天
 const MAX_ORDER_ITEM = 10; // 最大订单项数
 
 function getOffsetIndex(offsetDay: number){

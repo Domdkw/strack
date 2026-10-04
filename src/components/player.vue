@@ -1,8 +1,7 @@
 <script setup lang="ts">
+import { computed, onMounted, ref } from "vue";
 import { usePlayerStore } from "../stores/playerStore";
 import { formatTime } from "../utils/formatTime";
-
-import { onMounted } from "vue";
 
 const player = usePlayerStore();
 
@@ -11,25 +10,50 @@ function close(): void {
     player.$patch({ song: null });
 }
 
+// ===== 可拖动进度条 =====
+const barEl = ref<HTMLElement | null>(null);
+const scrubbing = ref(false);
+const scrubTime = ref(0);
+
+// 拖动中显示拖动位置，否则跟随实际播放进度
+const shownTime = computed<number>(() => scrubbing.value ? scrubTime.value : player.currentTime);
+const progressPct = computed<string>(() =>
+    player.duration ? `${(shownTime.value / player.duration) * 100}%` : '0%'
+);
+
+function ratioToTime(e: PointerEvent): number {
+    const el = barEl.value;
+    if (!el || !player.duration) return 0;
+    const rect = el.getBoundingClientRect();
+    const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+    return ratio * player.duration;
+}
+
+function onScrubStart(e: PointerEvent): void {
+    if (!player.song || !player.duration) return;
+    scrubbing.value = true;
+    scrubTime.value = ratioToTime(e);
+    const move = (ev: PointerEvent): void => { scrubTime.value = ratioToTime(ev); };
+    const up = (ev: PointerEvent): void => {
+        window.removeEventListener('pointermove', move);
+        window.removeEventListener('pointerup', up);
+        player.seek(ratioToTime(ev));
+        scrubbing.value = false;
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+}
+
 onMounted(() => {
     player.bindAudioEvents();
 });
 </script>
 
 <template>
-    <Transition
-        enter-active-class="transition duration-200 ease-out"
-        enter-from-class="-translate-y-full opacity-0"
-        enter-to-class="translate-y-0 opacity-100"
-        leave-active-class="transition duration-150 ease-in"
-        leave-from-class="translate-y-0 opacity-100"
-        leave-to-class="-translate-y-full opacity-0"
-    >
-        <div
-            v-if="player.song"
-            class="fixed top-0 left-0 right-0 z-50 border-b border-stone-200 bg-white/95 backdrop-blur shadow-sm"
-        >
-            <div class="mx-auto flex max-w-3xl items-center gap-3 px-4 py-2.5">
+    <!-- 底部播放器：sticky 占位，固定高度 -->
+    <footer class="sticky bottom-0 z-50 flex h-[72px] flex-col border-t border-stone-200 bg-white/95 backdrop-blur shadow-sm">
+        <template v-if="player.song">
+            <div class="mx-auto flex w-full max-w-3xl flex-1 items-center gap-3 overflow-hidden px-4">
 
                 <img
                     v-if="player.song.artwork"
@@ -45,7 +69,7 @@ onMounted(() => {
                 </div>
 
                 <span class="shrink-0 font-mono text-xs text-stone-300">
-                    <span>{{ formatTime(player.currentTime) }}</span> / <span>{{ formatTime(player.duration) }}</span>
+                    <span>{{ formatTime(shownTime) }}</span> / <span>{{ formatTime(player.duration) }}</span>
                 </span>
 
                 <button
@@ -72,13 +96,24 @@ onMounted(() => {
                 </button>
             </div>
 
-            <!-- 进度条 -->
-            <div class="h-0.5 w-full bg-stone-100">
+            <!-- 可拖动进度条 -->
+            <div
+                ref="barEl"
+                class="group relative h-2 w-full cursor-pointer touch-none bg-stone-100"
+                @pointerdown="onScrubStart"
+            >
+                <div class="absolute inset-y-0 left-0 bg-amber-400" :style="{ width: progressPct }"></div>
                 <div
-                    class="h-full bg-amber-300"
-                    :style="{ width: player.duration ? `${(player.currentTime / player.duration) * 100}%` : '0%' }"
+                    class="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-amber-500 transition-opacity"
+                    :class="scrubbing ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'"
+                    :style="{ left: progressPct }"
                 ></div>
             </div>
+        </template>
+
+        <!-- 未播放时的占位（同样固定高度居中） -->
+        <div v-else class="flex flex-1 items-center justify-center text-xs text-stone-300">
+            未在播放
         </div>
-    </Transition>
+    </footer>
 </template>

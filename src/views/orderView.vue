@@ -144,8 +144,8 @@ const activeDateLabel = computed<string>(() => {
 const expandedFollows = ref<Set<number>>(new Set());
 
 function toggleFollow(idx: number, count: number): void {
-    // 少于等于 3 人无需展开
-    if (count <= 3) return;
+    // 少于等于 5 人无需展开
+    if (count <= 5) return;
     if (expandedFollows.value.has(idx)) {
         expandedFollows.value.delete(idx);
     } else {
@@ -171,14 +171,22 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="min-h-screen bg-[#faf7f0] text-stone-800">
-        <div class="mx-auto max-w-5xl px-4 pb-28 pt-10">
+    <div class="relative flex-1 overflow-hidden text-stone-800">
+        <!-- 首页背景图 + 白色遮罩 -->
+        <div class="absolute inset-0" aria-hidden="true">
+            <img
+                src="https://slzx.dgjy.net/images/banner.png"
+                alt=""
+                class="h-full w-full object-cover"
+            />
+            <div class="absolute inset-0 bg-white/60"></div>
+        </div>
 
-            <header class="mb-4 flex items-baseline justify-between">
-                <h1 class="text-2xl font-semibold tracking-wide text-stone-800">栏目预览</h1>
-                <span class="text-xs text-stone-400">
-                    {{ overviewLoading ? '加载中…' : '点击日期查看当天栏目' }}
-                </span>
+        <div class="relative mx-auto max-w-5xl px-4 pb-10 pt-8">
+
+            <header class="mb-4 text-center">
+                <h1 class="text-3xl font-semibold tracking-wide text-stone-800">东莞市石龙中学广播站</h1>
+                <p class="mt-1.5 text-sm text-stone-400">栏目预览 · 点击日期查看当天栏目</p>
             </header>
 
             <p v-if="overviewError" class="mb-3 text-sm text-red-500">{{ overviewError }}</p>
@@ -206,19 +214,15 @@ onMounted(() => {
                                 class="relative flex h-24 w-full flex-col items-start rounded-sm p-1.5 text-left transition"
                                 :class="[
                                     day.disabled
-                                        ? 'cursor-not-allowed bg-stone-100/70 text-stone-300'
-                                        : 'bg-white ring-1 ring-stone-200/70 hover:ring-amber-400',
+                                        ? 'cursor-not-allowed bg-stone-100/50 text-stone-300'
+                                        : 'bg-white ring-1 ring-stone-200/80 hover:ring-amber-400',
                                 ]"
                             >
                                 <!-- 日期数字：左上角 -->
                                 <span
                                     class="text-[11px] font-medium leading-none"
                                     :class="[
-                                        day.disabled
-                                            ? 'text-stone-300'
-                                            : day.isToday
-                                                ? 'text-amber-700'
-                                                : 'text-stone-500',
+                                        day.isToday ? 'text-amber-700' : 'text-stone-500',
                                     ]"
                                 >
                                     {{ day.day }}
@@ -261,7 +265,7 @@ onMounted(() => {
         <Teleport to="body">
             <div
                 v-if="showDetail"
-                class="fixed inset-0 z-40 overflow-y-auto bg-stone-900/40"
+                class="fixed inset-0 z-[60] overflow-y-auto bg-stone-900/40"
                 @click.self="closeDetail"
             >
                 <div class="mx-auto my-16 w-[calc(100%-2rem)] max-w-2xl border border-stone-200/70 bg-white shadow-xl">
@@ -328,9 +332,6 @@ onMounted(() => {
                                 @click.stop
                             >
                                 <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-600">
-                                    <svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a4 4 0 0 0-3-3.87M9 20H4v-2a4 4 0 0 1 3-3.87m6-1.13a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm6-4a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM9 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/>
-                                    </svg>
                                     {{ entry.followUsers.length }} 人跟随
                                 </span>
                                 <span

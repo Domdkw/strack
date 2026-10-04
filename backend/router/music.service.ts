@@ -8,8 +8,6 @@ import CryptoJS from "crypto-js";
 import type { Context } from "hono";
 import { memCache } from 'hono-mem-cache';
 
-const CACHE_SECONDS = 1 * 60; // 1分钟缓存
-
 const _ = new Hono();
 const [search, strategy] = [
     new Hono(), new Hono(),

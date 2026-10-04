@@ -8,8 +8,7 @@
   "kv_namespaces": [
     {
       "binding": "CF_KV",
-      "id": "<替换为你的KV命名空间ID>",
-      "preview_id": "<替换为你的预览KV命名空间ID>"
+      "id": "8faa7aaad1bf42bc8c143af6b16aeb03"
     }
   ],
   // 环境变量（非敏感配置；敏感信息用 `wrangler pages secret put` 设置）

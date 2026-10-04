@@ -58,8 +58,8 @@ async function loadMore(): Promise<void> {
 </script>
 
 <template>
-    <div class="min-h-screen bg-[#faf7f0] text-stone-800">
-        <div class="mx-auto max-w-3xl px-4 pb-28 pt-12">
+    <div class="flex-1 bg-[#faf7f0] text-stone-800">
+        <div class="mx-auto max-w-3xl px-4 pb-10 pt-8">
 
             <!-- 标题 -->
             <header class="mb-8 text-center">
