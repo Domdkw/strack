@@ -40,7 +40,8 @@ column
         return c.json(res);
     })
     .get('/lookup/all/v1.0', async (c) => {
-        const columns = await getAllColumn();
+        const kv = c.get('kv');
+        const columns = await getAllColumn(kv);
         // 统一 { data } 结构，前端 xfetch 解包 raw.data
         return c.json({ data: columns });
     })

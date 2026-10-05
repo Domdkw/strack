@@ -4,7 +4,10 @@ import { platforms } from "../../shared/types/base";
 import { musicInfo } from "./musicInfo";
 
 
-const columnCache = new Map<string, { columns: ColumnEntry[], timestamp: number }>();
+type ColumnRow = { columns: ColumnEntry[]; timestamp: number };
+type ColumnResult = { data: ColumnRow } | { code: number; error: string };
+
+const columnCache = new Map<string, ColumnRow>();
 
 const CACHE_TTL = 5 * 60 * 1000; // 栏目内存缓存时长（毫秒），默认 5 小时
 const MAX_COLUMN = 22; // 最大栏目数，0-21天
@@ -25,9 +28,6 @@ async function getOffsetColumn(offsetDay: number, storage: Storage){
     const index = getOffsetIndex(offsetDay);
     return await getDateColumn(index, storage);
 }
-
-type ColumnRow = { columns: ColumnEntry[]; timestamp: number };
-type ColumnResult = { data: ColumnRow } | { code: number; error: string };
 
 async function getDateColumn(columnId: string, storage: Storage): Promise<ColumnResult>{
     try{
@@ -147,9 +147,10 @@ async function pushColumn(
         currentRow.timestamp = Date.now();
         // cache set
         columnCache.set(columnId, currentRow); // 覆盖缓存
-
         // write to storage
         await storage.setItem(columnId, currentRow, { ttl: COLUMN_TTL }); // 31天缓存
+        // index set
+        await updateIndexColumn(storage, columnId, currentRow);
         // 返回push的栏目
         return { data: column };
     } catch (err) {
@@ -160,11 +161,51 @@ async function pushColumn(
 
 
 // 预览用：每天的歌曲摘要（含跟随人数）
-type AllColumnSong = { artwork?: string; title: string; followCount: number };
-type AllColumnDay = { songs: AllColumnSong[]; timestamp: number };
+type AllColumnDay = {
+    songs: { artwork?: string; title: string; followCount: number }[];
+    timestamp: number;
+};
+type ReturnAllColumn = Record<string, AllColumnDay> & {
+    forceReturnCache?: boolean;
+    cacheHas?: boolean;
+    writeToStorage?: boolean;
+};
+const INDEX_COLUMN_KEY = 'indexColumn';
 
-async function getAllColumn(): Promise<Record<string, AllColumnDay>> {
-    const columns: Record<string, AllColumnDay> = {};
+const _getIndexColumnValue: (row: ColumnRow) => AllColumnDay = (row: ColumnRow) => ({
+    songs: row.columns.map(col => ({
+        artwork: col.song.artwork,
+        title: col.song.title,
+        followCount: col.followUsers?.length ?? 0,
+    })),
+    timestamp: row.timestamp,
+})
+async function buildIndexColumn(storage: Storage): Promise<ReturnAllColumn> {
+    let columns: ReturnAllColumn = {};
+    for(let i = 0; i < MAX_COLUMN; i++){
+        const key = getOffsetIndex(i);
+        const rowResult = await getDateColumn(key, storage) || null;
+        if(!('data' in rowResult)){
+            continue;
+        }
+        const row: ColumnRow = rowResult.data;
+        columns[key] = _getIndexColumnValue(row);
+        continue;
+    }
+    return columns;
+}
+async function updateIndexColumn(storage: Storage, columnId: string, columnRow: ColumnRow): Promise<void>{
+    // unstorage getItem 会自动反序列化，可能是对象或字符串
+    const kvRes = await storage.getItem(INDEX_COLUMN_KEY) || null;
+    let res: ReturnAllColumn = kvRes
+        ? (typeof kvRes === "string" ? JSON.parse(kvRes) : kvRes) as ReturnAllColumn
+        : await buildIndexColumn(storage);
+    res[columnId] = _getIndexColumnValue(columnRow);
+    await storage.setItem(INDEX_COLUMN_KEY, res);
+}
+async function getAllColumn(storage: Storage, forceReturnCache = false): Promise<ReturnAllColumn> {
+    let columns: ReturnAllColumn = {};
+    let cacheHas = false;
     for(let i = 0; i < MAX_COLUMN; i++){
         const key = getOffsetIndex(i);
         const row = columnCache.get(String(key)) || null;
@@ -172,15 +213,19 @@ async function getAllColumn(): Promise<Record<string, AllColumnDay>> {
             columns[key] = { songs: [], timestamp: Date.now() };
             continue;
         }
-        columns[key] = {
-            songs: row.columns.map(col => ({
-                artwork: col.song.artwork,
-                title: col.song.title,
-                followCount: col.followUsers?.length ?? 0,
-            })),
-            timestamp: row.timestamp,
-        }
+        cacheHas = true;
+        columns[key] = _getIndexColumnValue(row);
     }
+    columns.cacheHas = cacheHas;
+    columns.forceReturnCache = forceReturnCache;
+    if(cacheHas || forceReturnCache){
+        return columns;
+    }
+    // 冷启动：内存缓存为空，从数据库逐日构建（getDateColumn 会同时填充内存缓存）
+    columns = await buildIndexColumn(storage);
+    // 同步 kv 持久化，保持索引一致
+    await storage.setItem(INDEX_COLUMN_KEY, columns);
+    columns.writeToStorage = true;
     return columns;
 }
 export { getOffsetColumn, getDateColumn, setColumn, getAllColumn };
