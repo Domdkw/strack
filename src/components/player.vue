@@ -53,6 +53,20 @@ onMounted(() => {
     <!-- 底部播放器：sticky 占位，固定高度 -->
     <footer class="sticky bottom-0 z-50 flex h-[72px] flex-col border-t border-stone-200 bg-white/95 backdrop-blur shadow-sm">
         <template v-if="player.song">
+            <!-- 可拖动进度条 -->
+            <div
+                ref="barEl"
+                class="group relative h-2 w-full cursor-pointer touch-none bg-stone-100"
+                @pointerdown="onScrubStart"
+            >
+                <div class="absolute inset-y-0 left-0 bg-amber-400" :style="{ width: progressPct }"></div>
+                <div
+                    class="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-amber-500 transition-opacity"
+                    :class="scrubbing ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'"
+                    :style="{ left: progressPct }"
+                ></div>
+            </div>
+            
             <div class="mx-auto flex w-full max-w-3xl flex-1 items-center gap-3 overflow-hidden px-4">
 
                 <img
@@ -94,20 +108,6 @@ onMounted(() => {
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                 </button>
-            </div>
-
-            <!-- 可拖动进度条 -->
-            <div
-                ref="barEl"
-                class="group relative h-2 w-full cursor-pointer touch-none bg-stone-100"
-                @pointerdown="onScrubStart"
-            >
-                <div class="absolute inset-y-0 left-0 bg-amber-400" :style="{ width: progressPct }"></div>
-                <div
-                    class="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-amber-500 transition-opacity"
-                    :class="scrubbing ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'"
-                    :style="{ left: progressPct }"
-                ></div>
             </div>
         </template>
 

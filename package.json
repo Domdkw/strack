@@ -8,8 +8,8 @@
     "dev:web": "bun vite",
     "dev:api": "bun run --hot backend/adapter/bun.ts",
     "build": "vue-tsc -b && vite build",
-    "dev:cf": "vite build && wrangler pages dev",
-    "deploy:cf": "bun run build && wrangler pages deploy",
+    "dev:cf": "vite build && bunx wrangler pages dev",
+    "deploy:cf": "bun run build && bunx wrangler pages deploy",
     "preview": "vite preview"
   },
   "dependencies": {
