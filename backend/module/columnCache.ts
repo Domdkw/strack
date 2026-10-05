@@ -221,11 +221,17 @@ async function getAllColumn(storage: Storage, forceReturnCache = false): Promise
     if(cacheHas || forceReturnCache){
         return columns;
     }
-    // 冷启动：内存缓存为空，从数据库逐日构建（getDateColumn 会同时填充内存缓存）
-    columns = await buildIndexColumn(storage);
-    // 同步 kv 持久化，保持索引一致
-    await storage.setItem(INDEX_COLUMN_KEY, columns);
-    columns.writeToStorage = true;
-    return columns;
+    // 冷启动：优先读 KV 索引（pushColumn 时由 updateIndexColumn 保持同步）
+    const kvColumn = await storage.getItem(INDEX_COLUMN_KEY) as ReturnAllColumn || null;
+    if(!kvColumn){
+        // 索引未存在，从数据库逐日构建（getDateColumn 会同时填充内存缓存）
+        columns = await buildIndexColumn(storage);
+        // 写回 kv 持久化
+        await storage.setItem(INDEX_COLUMN_KEY, columns);
+        columns.writeToStorage = true;
+        return columns;
+    }
+    // 索引存在（unstorage getItem 会自动反序列化，可能是对象或字符串）
+    return (typeof kvColumn === "string" ? JSON.parse(kvColumn) : kvColumn) as ReturnAllColumn;
 }
 export { getOffsetColumn, getDateColumn, setColumn, getAllColumn };
