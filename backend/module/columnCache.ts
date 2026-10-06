@@ -12,6 +12,7 @@ const columnCache = new Map<string, ColumnRow>();
 const CACHE_TTL = 5 * 60 * 1000; // 栏目内存缓存时长（毫秒），默认 5 小时
 const MAX_COLUMN = 22; // 最大栏目数，0-21天
 const COLUMN_TTL = MAX_COLUMN * 24 * 60 * 60; // KV expirationTtl（秒），默认 22 天
+const COLUMN_TTL_MS = COLUMN_TTL * 1000; // 内存/索引过期判断用（毫秒）
 const MAX_ORDER_ITEM = 10; // 最大订单项数
 
 function getOffsetIndex(offsetDay: number){
@@ -170,6 +171,7 @@ type ReturnAllColumn = Record<string, AllColumnDay> & {
     writeToStorage?: boolean;
 };
 const INDEX_COLUMN_KEY = 'indexColumn';
+let indexColumnCache: ReturnAllColumn = {};
 
 const _getIndexColumnValue: (row: ColumnRow) => AllColumnDay = (row: ColumnRow) => ({
     songs: row.columns.map(col => ({
@@ -193,6 +195,19 @@ async function buildIndexColumn(storage: Storage): Promise<ReturnAllColumn> {
     }
     return columns;
 }
+function delTimeoutColumn(allColumn: ReturnAllColumn): ReturnAllColumn{
+    // 返回新对象而非原地删除，便于调用方通过引用比较判断是否有变化
+    const result: ReturnAllColumn = {};
+    const minTimestamp = Date.now() - COLUMN_TTL_MS;
+    const keys = Object.keys(allColumn);
+    for(let key of keys){
+        const column = allColumn[key];
+        if(column.timestamp && column.timestamp >= minTimestamp){
+            result[key] = column;
+        }
+    }
+    return result;
+}
 async function updateIndexColumn(storage: Storage, columnId: string, columnRow: ColumnRow): Promise<void>{
     // unstorage getItem 会自动反序列化，可能是对象或字符串
     const kvRes = await storage.getItem(INDEX_COLUMN_KEY) || null;
@@ -200,23 +215,17 @@ async function updateIndexColumn(storage: Storage, columnId: string, columnRow: 
         ? (typeof kvRes === "string" ? JSON.parse(kvRes) : kvRes) as ReturnAllColumn
         : await buildIndexColumn(storage);
     res[columnId] = _getIndexColumnValue(columnRow);
+    // 过期删除
+    res = delTimeoutColumn(res);
+    // 缓存更新
+    indexColumnCache = res;
+    // 写回 kv 持久化
     await storage.setItem(INDEX_COLUMN_KEY, res);
 }
 async function getAllColumn(storage: Storage): Promise<ReturnAllColumn> {
-    let columns: ReturnAllColumn = {};
-    let cacheHas = false;
-    for(let i = 0; i < MAX_COLUMN; i++){
-        const key = getOffsetIndex(i);
-        const row = columnCache.get(String(key)) || null;
-        if(!row){
-            columns[key] = { songs: [], timestamp: Date.now() };
-            continue;
-        }
-        cacheHas = true;
-        columns[key] = _getIndexColumnValue(row);
-    }
-    columns.cacheHas = cacheHas;
-    if(cacheHas){
+    let columns: ReturnAllColumn = indexColumnCache;
+    if(Object.keys(columns).length > 0){
+        columns.cacheHas = true;
         return columns;
     }
     // 冷启动：优先读 KV 索引（pushColumn 时由 updateIndexColumn 保持同步）
@@ -226,10 +235,21 @@ async function getAllColumn(storage: Storage): Promise<ReturnAllColumn> {
         columns = await buildIndexColumn(storage);
         // 写回 kv 持久化
         await storage.setItem(INDEX_COLUMN_KEY, columns);
-        columns.writeToStorage = true;
+        columns.writeToStorage = true; // 标记为已写入存储
         return columns;
     }
     // 索引存在（unstorage getItem 会自动反序列化，可能是对象或字符串）
-    return (typeof kvColumn === "string" ? JSON.parse(kvColumn) : kvColumn) as ReturnAllColumn;
+    columns = (typeof kvColumn === "string" ? JSON.parse(kvColumn) : kvColumn) as ReturnAllColumn;
+    // 过期检测
+    const deletedColumns = delTimeoutColumn(columns);
+    if(columns !== deletedColumns){
+        storage.setItem(INDEX_COLUMN_KEY, deletedColumns);
+        columns = deletedColumns;
+    }
+    // 缓存更新
+    indexColumnCache = columns;
+    //构建返回值
+    columns.cacheHas = false; columns.writeToStorage = false;
+    return columns;
 }
 export { getOffsetColumn, getDateColumn, setColumn, getAllColumn };
