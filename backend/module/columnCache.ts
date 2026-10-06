@@ -166,7 +166,6 @@ type AllColumnDay = {
     timestamp: number;
 };
 type ReturnAllColumn = Record<string, AllColumnDay> & {
-    forceReturnCache?: boolean;
     cacheHas?: boolean;
     writeToStorage?: boolean;
 };
@@ -203,7 +202,7 @@ async function updateIndexColumn(storage: Storage, columnId: string, columnRow: 
     res[columnId] = _getIndexColumnValue(columnRow);
     await storage.setItem(INDEX_COLUMN_KEY, res);
 }
-async function getAllColumn(storage: Storage, forceReturnCache = false): Promise<ReturnAllColumn> {
+async function getAllColumn(storage: Storage): Promise<ReturnAllColumn> {
     let columns: ReturnAllColumn = {};
     let cacheHas = false;
     for(let i = 0; i < MAX_COLUMN; i++){
@@ -217,8 +216,7 @@ async function getAllColumn(storage: Storage, forceReturnCache = false): Promise
         columns[key] = _getIndexColumnValue(row);
     }
     columns.cacheHas = cacheHas;
-    columns.forceReturnCache = forceReturnCache;
-    if(cacheHas || forceReturnCache){
+    if(cacheHas){
         return columns;
     }
     // 冷启动：优先读 KV 索引（pushColumn 时由 updateIndexColumn 保持同步）

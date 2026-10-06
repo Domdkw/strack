@@ -46,7 +46,7 @@ async function fetchOverview(): Promise<void> {
     overviewLoading.value = true;
     overviewError.value = '';
     try {
-        const res = await xfetch<Record<string, OverviewDay>>('/api/order/column/lookup/all/v1.0');
+        const res = await xfetch<Record<string, OverviewDay>>('/api/order/column/lookup/index/all/v1.0');
         overview.value = res ?? {};
     } catch (err) {
         overviewError.value = getErrorMessage(err);
