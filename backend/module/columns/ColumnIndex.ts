@@ -4,7 +4,6 @@ import {
     getOffsetIndex,
     MAX_COLUMN,
     INDEX_COLUMN_KEY,
-    COLUMN_TTL_MS,
     jsonKv,
 } from "./common";
 

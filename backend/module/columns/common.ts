@@ -11,7 +11,6 @@ export const columnCache = new Map<string, ColumnRow>();
 export const CACHE_TTL = 5 * 60 * 60 * 1000; // 5 小时
 export const MAX_COLUMN = 22; // 最大栏目数，0-21天
 export const COLUMN_TTL = MAX_COLUMN * 24 * 60 * 60; // KV expirationTtl（秒），默认 22 天
-export const COLUMN_TTL_MS = COLUMN_TTL * 1000; // 内存/索引过期判断用（毫秒）
 export const MAX_ORDER_ITEM = 10; // 最大订单项数
 export const INDEX_COLUMN_KEY = 'indexColumn';
 
