@@ -66,6 +66,10 @@ const browserAccess = createMiddleware(async (c, next) => {
     if (!uuid) {
         return c.json({ code: 109, error: 'uuid is required' }, 400);
     }
+    // 验证uuid是否在白名单
+    if (uuid[8] !== '-' || uuid[13] !== '-' || uuid[18] !== '-' || uuid[23] !== '-') {
+        return c.json({ code: 110, error: 'uuid is not in whitelist' }, 400);
+    }
     await next();
 });
 

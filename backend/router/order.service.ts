@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { signAccess } from "../middleware/reqAccess";
 import { storageMiddleware } from "../middleware/storage";
-import { getOffsetColumn, setColumn, getAllColumn } from "../module/columnCache";
+import { ColumnGet, ColumnSet, ColumnIndex } from "../module/columns";
 import { verifyAll } from "../module/verifyUser";
 
 const _ = new Hono(); const column = new Hono();
@@ -18,7 +18,7 @@ column
                 code: 202,
                 error: 'offsetDay is required and between 0 and 21',
             });
-        const column = await getOffsetColumn(offsetDay, kv);
+        const column = await new ColumnGet(kv).getOffsetColumn(offsetDay);
         return c.json(column);
     })
     .post('/modify/update/v1.0', async (c) => {
@@ -36,12 +36,12 @@ column
         if(!verifyAll(userName, userId, className)){
             return c.json({code: 207, error: 'userName, userId, className is invalid'});
         }
-        const res = await setColumn(body, kv);
+        const res = await new ColumnSet(kv).setColumn(body);
         return c.json(res);
     })
     .get('/lookup/index/all/v1.0', async (c) => {
         const kv = c.get('kv');
-        const columns = await getAllColumn(kv);
+        const columns = await new ColumnIndex(kv).getAllColumn();
         // 统一 { data } 结构，前端 xfetch 解包 raw.data
         return c.json({ data: columns });
     })
