@@ -23,7 +23,7 @@ type CalDay = {
     disabled: boolean;   // 不可查看（过去或超出 21 天）
     songs: OverviewSong[];
 };
-type CalMonth = { year: number; month: number; weeks: (CalDay | null)[][] };
+type CalWeek = { start: Date; end: Date; days: (CalDay | null)[] };
 
 const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
 
@@ -55,49 +55,47 @@ async function fetchOverview(): Promise<void> {
     }
 }
 
-// 日历：从本月 1 号铺到今天+21 所在月的月末，无法查看的天置灰
-const calendar = computed<CalMonth[]>(() => {
+// 日历按周分 行：从本周周日铺到 今天+21 所在周的周六，过去的星期照常显示（置灰）
+const calendar = computed<CalWeek[]>(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const last = new Date(today);
     last.setDate(last.getDate() + MAX_OFFSET);
 
-    const start = new Date(today.getFullYear(), today.getMonth(), 1);
-    const end = new Date(last.getFullYear(), last.getMonth() + 1, 0); // 所在月月末
+    const start = new Date(today);
+    start.setDate(start.getDate() - start.getDay()); // 本周周日
+    const end = new Date(last);
+    end.setDate(end.getDate() + (6 - last.getDay())); // 末周周六
 
-    const months: CalMonth[] = [];
-    let cur: CalMonth | null = null;
-    let week: (CalDay | null)[] = [];
+    const weeks: CalWeek[] = [];
+    let days: (CalDay | null)[] = [];
+    let weekStart = new Date(start);
 
     for (const d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-        const monthKey = d.getFullYear() * 100 + d.getMonth();
-        if (!cur || cur.year * 100 + cur.month !== monthKey) {
-            if (cur && week.length) {
-                while (week.length < 7) week.push(null); // 月末补齐
-                cur.weeks.push(week);
-            }
-            week = [];
-            cur = { year: d.getFullYear(), month: d.getMonth(), weeks: [] };
-            months.push(cur);
-            for (let i = 0; i < d.getDay(); i++) week.push(null); // 月初对齐周日
-        }
-        if (week.length === 7) { cur.weeks.push(week); week = []; }
         const offsetDay = Math.round((d.getTime() - today.getTime()) / 86400000);
         const key = dateKey(d);
-        week.push({
+        days.push({
             offsetDay,
             day: d.getDate(),
             isToday: offsetDay === 0,
             disabled: offsetDay < 0 || offsetDay > MAX_OFFSET,
             songs: overview.value[key]?.songs ?? [],
         });
+        if (days.length === 7) {
+            weeks.push({ start: weekStart, end: new Date(d), days });
+            days = [];
+            weekStart = new Date(d);
+            weekStart.setDate(weekStart.getDate() + 1);
+        }
     }
-    if (cur && week.length) {
-        while (week.length < 7) week.push(null);
-        cur.weeks.push(week);
-    }
-    return months;
+    return weeks;
 });
+
+// 周行的范围标签，如 10.11 - 10.17
+function weekLabel(w: CalWeek): string {
+    const fmt = (d: Date): string => `${d.getMonth() + 1}.${d.getDate()}`;
+    return `${fmt(w.start)} - ${fmt(w.end)}`;
+}
 
 // ===== 详情浮层（点开某天） =====
 const activeDay = ref(0);
@@ -191,20 +189,14 @@ onMounted(() => {
 
             <p v-if="overviewError" class="mb-3 text-sm text-red-500">{{ overviewError }}</p>
 
-            <div v-for="month in calendar" :key="`${month.year}-${month.month}`" class="mb-8">
-                <h2 class="mb-2 px-1 text-sm font-medium text-stone-500">
-                    {{ month.year }}年{{ month.month + 1 }}月
-                </h2>
-                <div class="mb-1 grid grid-cols-7 gap-1 text-center text-[10px] text-stone-400">
-                    <span v-for="w in weekdays" :key="w">{{ w }}</span>
-                </div>
-                <div class="space-y-1">
-                    <div
-                        v-for="(week, wi) in month.weeks"
-                        :key="wi"
-                        class="grid grid-cols-7 gap-1"
-                    >
-                        <template v-for="(day, di) in week" :key="di">
+            <div class="mb-1 grid grid-cols-7 gap-1 text-center text-[10px] text-stone-400">
+                <span v-for="w in weekdays" :key="w">{{ w }}</span>
+            </div>
+            <div class="space-y-3">
+                <div v-for="(week, wi) in calendar" :key="wi">
+                    <p class="mb-1 px-1 text-[10px] text-stone-400">{{ weekLabel(week) }}</p>
+                    <div class="grid grid-cols-7 gap-1">
+                        <template v-for="(day, di) in week.days" :key="di">
                             <span v-if="!day"></span>
                             <button
                                 v-else
