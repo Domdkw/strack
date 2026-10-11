@@ -1,32 +1,5 @@
 import { signV001 } from "../../shared/util/sign/v001";
-
-function randomStr(len: number, type: number = 0): string[] {
-    const k: string = type === 0 ? '0123456789abcdef' : '0123456789';
-    const str: string[] = [];
-    for (let i = 0; i < len; i++) {
-        str.push(
-            k[Math.floor(
-                Math.random() * k.length
-            )]
-        );
-    }
-    return str;
-}
-
-function genUUID(): string {
-    const s = randomStr(36, 0);
-    s[8] = '-', s[13] = '-', s[18] = '-', s[23] = '-';
-    return s.join('');
-}
-
-function genSalt(): string {
-    return randomStr(6, 1).join('');
-}
-
-interface XhrAccessContext {
-    request: Request | string;
-    options: { query?: Record<string, unknown> };
-}
+import { type XhrAccessContext, genUUID, genSalt } from "./apiUtils";
 
 function xhrAccess({ request, options }: XhrAccessContext): Headers {
     // ofetch 传入字符串 URL 时 request 不是 Request 实例，需统一处理

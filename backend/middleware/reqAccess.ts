@@ -17,28 +17,26 @@ const platformAccess = createMiddleware(async (c, next) => {
 
 const signAccess = createMiddleware(async (c, next) => {
     c.header('X-SignResult', 'failed');
-    const timestamp = c.req.query('t') || c.req.header('X-Timestamp');
+    const timestamp = c.req.header('X-Timestamp');
     if (!timestamp)
         return c.json({ code: 102, error: 'timestamp is required' }, 400);
     // 验证timestamp是否过5分钟
     if ((Date.now() - Number(timestamp)) > 1000 * 60 * 5)
         return c.json({ code: 103, error: 'timestamp is expired' }, 400);
-    const salt = c.req.header('X-Salt') || c.req.query('qsalt') || '';
+    const salt = c.req.header('X-Salt');
     if (!salt)
         return c.json({ code: 104, error: 'salt is required' }, 400);
-    let signVersion = c.req.header('X-SignVersion') || c.req.query('qsignVersion') || '';
+    let signVersion = c.req.header('X-SignVersion');
     if (!signVersion)
         return c.json({ code: 105, error: 'signVersion is required' }, 400);
     signVersion = signVersion.toLowerCase();
-    const sign = c.req.header('X-Sign') || c.req.query('qsign');
+    const sign = c.req.header('X-Sign');
     if (!sign)
         return c.json({ code: 106, error: 'sign is required' }, 400);
     /// === end
 
     // 验证sign
     const querys = c.req.query();
-    // qsign 本身不参与签名，否则客户端无法预计算
-    delete querys.qsign;
 
     let signStr = '';
     switch (signVersion) {

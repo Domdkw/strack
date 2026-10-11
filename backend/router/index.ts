@@ -7,6 +7,7 @@ import encryptRes from '../middleware/encryptRes';
 
 import musicService from './music.service';
 import orderService from './order.service';
+import adminService from './admin.service';
 
 const router = new Hono();
 
@@ -21,5 +22,6 @@ router.use(uaBlocker({
 
 router.route('/music', musicService);
 router.route('/order', orderService);
+router.route('/admin', adminService);
 
 export default router;

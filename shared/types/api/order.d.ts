@@ -12,7 +12,7 @@ export namespace SendOrder {
         userName: string;
         userId: string;
     }
-    type Req = Common & {
+    type Req = User & {
         offsetDay: number;
         songItem: OrderSong;
     }
@@ -22,3 +22,11 @@ export type ColumnEntry = Omit<SendOrder.Req, 'songItem'> & {
     followUsers: SendOrder.User[];
     timestamp: number
 };
+export type AdminReq = {
+    name: string;
+    userId: string;
+    password: string;
+    schoolName: string;
+    sign: string;
+    nonce: string;
+}
