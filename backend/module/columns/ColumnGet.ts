@@ -1,7 +1,7 @@
 import type { Storage } from "unstorage";
 import type { ColumnEntry } from "../../../shared/types/api/order";
 import {
-    type ColumnRow,
+    type ColumnObj,
     type ColumnResult,
     columnCache,
     getOffsetIndex,
@@ -25,7 +25,7 @@ class ColumnGet {
 
     public async getDateColumn(columnId: string, offsetDay: number): Promise<ColumnResult>{
         try{
-        const cache: ColumnRow | undefined = columnCache.get(columnId);
+        const cache: ColumnObj | undefined = columnCache.get(columnId);
         if (cache){
             //5小时缓存
             const now = Date.now();
@@ -35,13 +35,13 @@ class ColumnGet {
         }
         const strRes = await this.storage.getItem(columnId); // 从存储中获取栏目
         if (strRes){
-            const remoteRes: ColumnRow | undefined = jsonKv(strRes) || null;
+            const remoteRes: ColumnObj | undefined = jsonKv(strRes) || null;
 
             if(!remoteRes){
                 return {code: 205, error: 'column parse error'};
             }
             // 合并缓存
-            const currentRow: ColumnRow = {
+            const currentRow: ColumnObj = {
                 columns: (remoteRes.columns || []) as ColumnEntry[], // 覆盖缓存
                 createTime: remoteRes.createTime || Date.now(), // 传递创建时间
                 cacheTime: Date.now() // 更新缓存根时间
@@ -50,7 +50,7 @@ class ColumnGet {
             return {data: currentRow};
         }else{
             // 无栏目时直接返回空数据，and set缓存
-            const emptyRow: ColumnRow = {
+            const emptyRow: ColumnObj = {
                 columns: [] as ColumnEntry[],
                 createTime: getCreateTime(offsetDay),
                 cacheTime: Date.now(),

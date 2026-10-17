@@ -1,6 +1,6 @@
 import type { Storage } from "unstorage";
 import {
-    type ColumnRow,
+    type ColumnObj,
     getOffsetIndex,
     MAX_COLUMN,
     INDEX_COLUMN_KEY,
@@ -21,19 +21,20 @@ type ReturnAllColumn = Record<string, AllColumnDay> & {
 };
 let indexColumnCache: ReturnAllColumn = {};
 
+const getIndexColumnValue: (row: ColumnObj) => AllColumnDay = (row: ColumnObj) => ({
+    songs: row.columns.map(col => ({
+        artwork: col.song.artwork,
+        title: col.song.title,
+        followCount: col.followUsers?.length ?? 0,
+    })),
+    timestamp: row.createTime,
+})
+
 class ColumnIndex {
     private storage: Storage;
     constructor(storage: Storage){
         this.storage = storage;
     }
-    private _getIndexColumnValue: (row: ColumnRow) => AllColumnDay = (row: ColumnRow) => ({
-        songs: row.columns.map(col => ({
-            artwork: col.song.artwork,
-            title: col.song.title,
-            followCount: col.followUsers?.length ?? 0,
-        })),
-        timestamp: row.createTime,
-    })
     private async buildIndexColumn(): Promise<ReturnAllColumn> {
         let columns: ReturnAllColumn = {};
         for(let i = 0; i < MAX_COLUMN; i++){
@@ -42,8 +43,8 @@ class ColumnIndex {
             if(!('data' in rowResult)){
                 continue;
             }
-            const row: ColumnRow = rowResult.data;
-            columns[key] = this._getIndexColumnValue(row);
+            const row: ColumnObj = rowResult.data;
+            columns[key] = getIndexColumnValue(row);
             continue;
         }
         return columns;
@@ -60,13 +61,13 @@ class ColumnIndex {
         }
         return result;
     }
-    public async updateIndexColumn(columnId: string, columnRow: ColumnRow): Promise<void>{
+    public async updateIndexColumn(columnId: string, ColumnObj: ColumnObj): Promise<void>{
         // unstorage getItem 会自动反序列化，可能是对象或字符串
         const kvRes = await this.storage.getItem(INDEX_COLUMN_KEY) || null;
         let res: ReturnAllColumn = kvRes
             ? jsonKv(kvRes) as ReturnAllColumn
             : await this.buildIndexColumn();
-        res[columnId] = this._getIndexColumnValue(columnRow);
+        res[columnId] = getIndexColumnValue(ColumnObj);
         // 过期删除
         res = this.delTimeoutColumn(res);
         // 缓存更新

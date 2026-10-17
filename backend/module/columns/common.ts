@@ -1,12 +1,12 @@
 import type { ColumnEntry } from "../../../shared/types/api/order";
 
-export type ColumnRow = { columns: ColumnEntry[]; createTime: number, cacheTime: number };
+export type ColumnObj = { columns: ColumnEntry[]; createTime: number, cacheTime: number };
 export type ColumnResult =
-    | { data: ColumnRow }
+    | { data: ColumnObj }
     | { code: number; error: string};
 ;
 
-export const columnCache = new Map<string, ColumnRow>();
+export const columnCache = new Map<string, ColumnObj>();
 
 export const CACHE_TTL = 5 * 60 * 60 * 1000; // 5 小时
 export const MAX_COLUMN = 22; // 最大栏目数，0-21天

@@ -6,7 +6,8 @@ import {
     columnCache,
     getOffsetIndex,
     MAX_ORDER_ITEM,
-    COLUMN_TTL
+    COLUMN_TTL,
+    type ColumnObj
 } from "./common";
 
 import ColumnGet from "./ColumnGet";
@@ -55,7 +56,6 @@ class ColumnSet {
                 className: column.className,
                 userName: column.userName,
                 userId: column.userId,
-                offsetDay: column.offsetDay,
                 song: song,
                 followUsers: [],
                 timestamp: Date.now()
@@ -87,21 +87,27 @@ class ColumnSet {
             } else {
                 currentRow.columns.push(entry);
             }
-            //更新根时间
-            currentRow.cacheTime = Date.now();
-            // currentRow.createTime 不操作
-            // cache set
-            columnCache.set(columnId, currentRow); // 覆盖缓存
-            // write to storage
-            await this.storage.setItem(columnId, currentRow, { ttl: COLUMN_TTL }); // 21天缓存
-            // index set
-            await new ColumnIndex(this.storage).updateIndexColumn(columnId, currentRow);
-            // 返回push的栏目
-            return { data: column };
+            // 更新栏目
+            const updatedColumn = await this.setColumnObj(columnId, currentRow);
+            
+            return { data: updatedColumn };
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : String(err);
             return { code: 209, error: errorMessage };
         }
+    }
+    public async setColumnObj(columnId: string, columnObj: ColumnObj){
+        //更新根时间
+        columnObj.cacheTime = Date.now();
+        // columnObj.createTime 不操作
+        // cache set
+        columnCache.set(columnId, columnObj); // 覆盖缓存
+        // write to storage
+        await this.storage.setItem(columnId, columnObj, { ttl: COLUMN_TTL }); // 21天缓存
+        // index set
+        await new ColumnIndex(this.storage).updateIndexColumn(columnId, columnObj);
+        // 返回push的栏目
+        return columnObj;
     }
 }
 

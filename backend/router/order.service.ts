@@ -21,7 +21,7 @@ column
         const column = await new ColumnGet(kv).getOffsetColumn(offsetDay);
         return c.json(column);
     })
-    .post('/modify/update/v1.0', async (c) => {
+    .post('/modify/push/v1.0', async (c) => {
         const kv = c.get('kv');
         const body = await c.req.json();
         const songItem = body.songItem || {};

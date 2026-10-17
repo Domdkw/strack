@@ -93,7 +93,7 @@ async function onSubmit(): Promise<void> {
     submitting.value = true;
     errorMsg.value = '';
     try {
-        await xfetch<{ className: string }>('/api/order/column/modify/update/v1.0', {
+        await xfetch<{ className: string }>('/api/order/column/modify/push/v1.0', {
             method: 'POST',
             body: {
                 className: className.value.trim(),
