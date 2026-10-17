@@ -21,6 +21,22 @@ const router = createRouter({
             name: 'search',
             component: SearchView,
         },
+        {
+            // 管理员登录页
+            path: '/admin/login',
+            name: 'adminLogin',
+            component: () => import('../views/adminLoginView.vue'),
+        },
+        {
+            // 管理员页：本地凭证守卫（真正的鉴权由服务端 JWT Cookie 校验）
+            path: '/admin',
+            name: 'admin',
+            component: () => import('../views/adminView.vue'),
+            beforeEnter: (_to, _from, next) => {
+                if (!localStorage.getItem('admin')) next({ name: 'adminLogin' });
+                else next();
+            },
+        },
     ],
 })
 

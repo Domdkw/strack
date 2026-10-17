@@ -41,17 +41,14 @@ class ColumnDel {
         const columnResult: ColumnResult = await new ColumnGet(this.storage).getDateColumn(columnId, offsetDay);
         if (!('data' in columnResult)) return columnResult;
 
-        const { columns, createTime, cacheTime }: ColumnObj = columnResult.data;
-        const newColumn: ColumnObj = {
-            columns: removeDeleteItems(deleteRows, columns),
-            createTime,
-            cacheTime,
-        };
+        const newColumn: ColumnObj = columnResult.data;
+        newColumn.columns = removeDeleteItems(deleteRows, newColumn.columns);
         // 更新栏目
         const updatedColumn = await new ColumnSet(this.storage).setColumnObj(columnId, newColumn);
         return { data: updatedColumn };
     }catch (error) {
-        return { code: 311, error: error.message };
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        return { code: 311, error: errorMessage };
     }}
 }
 

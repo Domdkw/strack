@@ -1,6 +1,11 @@
 import type { ColumnEntry } from "../../../shared/types/api/order";
 
-export type ColumnObj = { columns: ColumnEntry[]; createTime: number, cacheTime: number };
+export type ColumnObj = {
+    columns: ColumnEntry[];
+    createTime: number;
+    cacheTime: number;
+    disabled: boolean;
+};
 export type ColumnResult =
     | { data: ColumnObj }
     | { code: number; error: string};

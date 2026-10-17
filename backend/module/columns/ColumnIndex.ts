@@ -10,10 +10,11 @@ import {
 import ColumnGet from "./ColumnGet";
 
 
-// 预览用：每天的歌曲摘要（含跟随人数）
+// 预览用：每天的歌曲摘要（含跟随人数与禁用状态）
 type AllColumnDay = {
     songs: { artwork?: string; title: string; followCount: number }[];
     timestamp: number;
+    disabled: boolean;
 };
 type ReturnAllColumn = Record<string, AllColumnDay> & {
     cacheHas?: boolean;
@@ -28,6 +29,7 @@ const getIndexColumnValue: (row: ColumnObj) => AllColumnDay = (row: ColumnObj) =
         followCount: col.followUsers?.length ?? 0,
     })),
     timestamp: row.createTime,
+    disabled: row.disabled === true,
 })
 
 class ColumnIndex {

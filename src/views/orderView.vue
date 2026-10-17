@@ -4,38 +4,12 @@ import xfetch from "../utils/xfetch";
 import { getErrorMessage } from "../utils/apiError";
 import type { ColumnEntry } from "../../shared/types/api/order.d.ts";
 import type { SongItem } from "../../shared/types/musicItem.d.ts";
+import type { OverviewDay, CalDay } from "../types/calendar";
 import { formatTime } from "../utils/formatTime";
 import { usePlayerStore } from "../stores/playerStore";
+import CalendarGrid from "../components/calendarGrid.vue";
 
 const player = usePlayerStore();
-
-const MAX_OFFSET = 21;
-
-// 预览接口返回的单天摘要
-type OverviewSong = { artwork?: string; title: string; followCount: number };
-type OverviewDay = { songs: OverviewSong[]; timestamp: number };
-
-// 日历单元格：null 表示占位空白
-type CalDay = {
-    offsetDay: number;   // 距今天的天数（0=今天，负数=过去）
-    day: number;         // 几号
-    isToday: boolean;
-    disabled: boolean;   // 不可查看（过去或超出 21 天）
-    songs: OverviewSong[];
-};
-type CalWeek = { start: Date; end: Date; days: (CalDay | null)[] };
-
-const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
-
-// 与后端 getOffsetIndex 一致的日期 key（Asia/Shanghai，yyyy-MM-dd）
-function dateKey(d: Date): string {
-    return d.toLocaleDateString('zh-CN', {
-        timeZone: 'Asia/Shanghai',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-    }).replace(/\//g, '-');
-}
 
 // ===== 预览数据（全部栏目摘要） =====
 const overview = ref<Record<string, OverviewDay>>({});
@@ -53,48 +27,6 @@ async function fetchOverview(): Promise<void> {
     } finally {
         overviewLoading.value = false;
     }
-}
-
-// 日历按周分 行：从本周周日铺到 今天+21 所在周的周六，过去的星期照常显示（置灰）
-const calendar = computed<CalWeek[]>(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const last = new Date(today);
-    last.setDate(last.getDate() + MAX_OFFSET);
-
-    const start = new Date(today);
-    start.setDate(start.getDate() - start.getDay()); // 本周周日
-    const end = new Date(last);
-    end.setDate(end.getDate() + (6 - last.getDay())); // 末周周六
-
-    const weeks: CalWeek[] = [];
-    let days: (CalDay | null)[] = [];
-    let weekStart = new Date(start);
-
-    for (const d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-        const offsetDay = Math.round((d.getTime() - today.getTime()) / 86400000);
-        const key = dateKey(d);
-        days.push({
-            offsetDay,
-            day: d.getDate(),
-            isToday: offsetDay === 0,
-            disabled: offsetDay < 0 || offsetDay > MAX_OFFSET,
-            songs: overview.value[key]?.songs ?? [],
-        });
-        if (days.length === 7) {
-            weeks.push({ start: weekStart, end: new Date(d), days });
-            days = [];
-            weekStart = new Date(d);
-            weekStart.setDate(weekStart.getDate() + 1);
-        }
-    }
-    return weeks;
-});
-
-// 周行的范围标签，如 10.11 - 10.17
-function weekLabel(w: CalWeek): string {
-    const fmt = (d: Date): string => `${d.getMonth() + 1}.${d.getDate()}`;
-    return `${fmt(w.start)} - ${fmt(w.end)}`;
 }
 
 // ===== 详情浮层（点开某天） =====
@@ -189,67 +121,7 @@ onMounted(() => {
 
             <p v-if="overviewError" class="mb-3 text-sm text-red-500">{{ overviewError }}</p>
 
-            <div class="mb-1 grid grid-cols-7 gap-1 text-center text-[10px] text-stone-400">
-                <span v-for="w in weekdays" :key="w">{{ w }}</span>
-            </div>
-            <div class="space-y-3">
-                <div v-for="(week, wi) in calendar" :key="wi">
-                    <p class="mb-1 px-1 text-[10px] text-stone-400">{{ weekLabel(week) }}</p>
-                    <div class="grid grid-cols-7 gap-1">
-                        <template v-for="(day, di) in week.days" :key="di">
-                            <span v-if="!day"></span>
-                            <button
-                                v-else
-                                type="button"
-                                :disabled="day.disabled"
-                                @click="openDay(day)"
-                                class="relative flex h-24 w-full flex-col items-start rounded-sm p-1.5 text-left transition"
-                                :class="[
-                                    day.disabled
-                                        ? 'cursor-not-allowed bg-stone-100/50 text-stone-300'
-                                        : 'bg-white ring-1 ring-stone-200/80 hover:ring-amber-400',
-                                ]"
-                            >
-                                <!-- 日期数字：左上角 -->
-                                <span
-                                    class="text-[11px] font-medium leading-none"
-                                    :class="[
-                                        day.isToday ? 'text-amber-700' : 'text-stone-500',
-                                    ]"
-                                >
-                                    {{ day.day }}
-                                    <span v-if="day.isToday" class="ml-0.5 text-[9px]">今天</span>
-                                </span>
-
-                                <!-- 歌曲封面（小圆圈） -->
-                                <div class="mt-1.5 flex w-full flex-wrap items-center gap-1">
-                                    <div
-                                        v-for="(s, si) in day.songs.slice(0, 4)"
-                                        :key="si"
-                                        class="group/art relative h-7 w-7 shrink-0"
-                                    >
-                                        <img
-                                            v-if="s.artwork"
-                                            :src="s.artwork"
-                                            :alt="s.title"
-                                            class="h-7 w-7 rounded-full bg-stone-100 object-cover"
-                                            loading="lazy"
-                                        />
-                                        <div v-else class="h-7 w-7 rounded-full bg-stone-100"></div>
-                                        <!-- hover 时圆圈上显示跟随人数（含点歌人 +1） -->
-                                        <span class="pointer-events-none absolute inset-0 hidden items-center justify-center rounded-full bg-stone-900/45 text-[10px] font-medium leading-none text-white group-hover/art:flex">
-                                            {{ s.followCount + 1 }}
-                                        </span>
-                                    </div>
-                                    <span v-if="day.songs.length > 4" class="text-[10px] text-stone-400">
-                                        +{{ day.songs.length - 4 }}
-                                    </span>
-                                </div>
-                            </button>
-                        </template>
-                    </div>
-                </div>
-            </div>
+            <CalendarGrid :overview="overview" @dayClick="openDay" />
 
         </div>
 

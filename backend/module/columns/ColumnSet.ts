@@ -66,6 +66,11 @@ class ColumnSet {
             if (!('data' in res)) return res;
             const currentRow = res.data;
 
+            // 禁用栏目：不添加新条目
+            if(currentRow.disabled === true){ // 键不存在时，继续添加
+                return {code: 212, error: 'column is disabled'};
+            }
+            // 最大条目数
             if(currentRow.columns.length >= MAX_ORDER_ITEM){
                 return {code: 211, error: 'max order item reached'};
             }

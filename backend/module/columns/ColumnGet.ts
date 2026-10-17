@@ -44,7 +44,8 @@ class ColumnGet {
             const currentRow: ColumnObj = {
                 columns: (remoteRes.columns || []) as ColumnEntry[], // 覆盖缓存
                 createTime: remoteRes.createTime || Date.now(), // 传递创建时间
-                cacheTime: Date.now() // 更新缓存根时间
+                cacheTime: Date.now(), // 更新缓存根时间
+                disabled: remoteRes.disabled === true, // 传递是否禁用，无键时默认false
             }
             columnCache.set(columnId, currentRow);
             return {data: currentRow};
@@ -54,6 +55,7 @@ class ColumnGet {
                 columns: [] as ColumnEntry[],
                 createTime: getCreateTime(offsetDay),
                 cacheTime: Date.now(),
+                disabled: false, // 未禁用
             };
             columnCache.set(columnId, emptyRow);
             return {data: emptyRow};
