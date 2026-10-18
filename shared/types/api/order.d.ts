@@ -15,12 +15,14 @@ export namespace SendOrder {
     type Req = User & {
         offsetDay: number;
         songItem: OrderSong;
+        text?: string;
     }
 }
 export type ColumnEntry = Omit<SendOrder.Req, 'songItem' | 'offsetDay'> & {
     song: SongItem;
     followUsers: SendOrder.User[];
     timestamp: number
+    text?: string;
 };
 export type AdminReq = {
     name: string;

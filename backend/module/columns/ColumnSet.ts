@@ -1,4 +1,5 @@
 import type { Storage } from "unstorage";
+import xss from "xss";
 import type { SendOrder, ColumnEntry, OrderSong } from "../../../shared/types/api/order";
 import { platforms } from "../../../shared/types/base";
 import { musicInfo } from "../musicInfo";
@@ -36,6 +37,11 @@ class ColumnSet {
         if(!curPlatform || !platforms.includes(curPlatform)){
             return {code: 210, error: 'songItem platform is invalid'};
         }
+        // 过滤 xss & 大小判断
+        if(body.text && body.text.length > 50){ // 最大长度 50
+            return {code: 213, error: 'text is required and between 0 and 50'};
+        }
+        body.text = body.text ? xss(body.text) : '';
         const index = getOffsetIndex(body.offsetDay);
         return await this.pushColumn(index, body);
     }
@@ -58,8 +64,9 @@ class ColumnSet {
                 userId: column.userId,
                 song: song,
                 followUsers: [],
-                timestamp: Date.now()
+                timestamp: Date.now(),
             };
+            if(column.text) entry.text = column.text;
 
             // 加载栏目
             const res = await new ColumnGet(this.storage).getDateColumn(columnId, column.offsetDay);

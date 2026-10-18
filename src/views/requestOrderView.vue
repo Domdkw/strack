@@ -77,6 +77,8 @@ const offsetDay = ref(1); // 默认明天（最早可点日期）
 const className = ref('');
 const userName = ref('');
 const userId = ref('');
+const text = ref(''); // 留言（可选，最长 50 字）
+const MAX_TEXT = 50;
 const submitting = ref(false);
 const errorMsg = ref('');
 
@@ -90,6 +92,10 @@ async function onSubmit(): Promise<void> {
         errorMsg.value = '请完整填写班级、姓名、学号';
         return;
     }
+    if (text.value.length > MAX_TEXT) {
+        errorMsg.value = `留言最长 ${MAX_TEXT} 字`;
+        return;
+    }
     submitting.value = true;
     errorMsg.value = '';
     try {
@@ -100,6 +106,7 @@ async function onSubmit(): Promise<void> {
                 userName: userName.value.trim(),
                 userId: userId.value.trim(),
                 offsetDay: offsetDay.value,
+                ...(text.value.trim() ? { text: text.value.trim() } : {}),
                 songItem: {
                     id: song.value.id,
                     platform: song.value.platform,
@@ -202,6 +209,20 @@ async function onSubmit(): Promise<void> {
                         />
                     </label>
                 </div>
+
+                <label class="mt-5 block">
+                    <span class="mb-1.5 flex items-baseline justify-between text-xs font-medium text-stone-500">
+                        <span>留言（可选）</span>
+                        <span class="font-normal text-stone-300">{{ text.length }}/{{ MAX_TEXT }}</span>
+                    </span>
+                    <textarea
+                        v-model="text"
+                        rows="2"
+                        maxlength="50"
+                        placeholder="给点歌加一句话吧"
+                        class="w-full resize-none border border-stone-200 bg-white px-3 py-2.5 text-sm text-stone-700 placeholder-stone-300 outline-none transition focus:border-amber-300"
+                    ></textarea>
+                </label>
 
                 <p v-if="errorMsg" class="mt-4 text-sm text-red-500">{{ errorMsg }}</p>
 

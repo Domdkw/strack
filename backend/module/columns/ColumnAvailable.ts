@@ -1,7 +1,7 @@
 import type { Storage } from "unstorage";
 import {
     type ColumnObj, type ColumnResult,
-    getOffsetIndex,
+    getOffsetIndex, MAX_COLUMN
 } from "./common";
 import ColumnGet from "./ColumnGet";
 import ColumnSet from "./ColumnSet";
@@ -12,6 +12,9 @@ class ColumnAvailable {
         this.storage = storage;
     }
     private hasDeleteObjKey(req: {offsetDay: number, disabled: boolean}){
+        if(!Number.isInteger(req.offsetDay) || req.offsetDay < 1 || req.offsetDay > MAX_COLUMN-1){
+            return false;
+        }
         return req.offsetDay !== undefined && req.disabled !== undefined;
     }
     public async changeUseable(req: {offsetDay: number, disabled: boolean}[]){ try{

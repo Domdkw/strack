@@ -189,6 +189,15 @@ onMounted(() => {
                                 <span class="w-10 shrink-0 text-right font-mono text-xs text-stone-300">{{ fmtTimestamp(entry.timestamp) }}</span>
                             </div>
 
+                            <!-- 留言 -->
+                            <p
+                                v-if="entry.text"
+                                class="border-t border-dashed border-stone-100 px-4 py-1.5 pl-20 text-xs text-stone-500"
+                                @click.stop
+                            >
+                                {{ entry.text }}
+                            </p>
+
                             <!-- 跟随子栏 -->
                             <div
                                 v-if="entry.followUsers?.length"

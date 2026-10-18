@@ -22,7 +22,8 @@
     "pinia": "^4.0.3",
     "unstorage": "^1.17.5",
     "vue": "^3.5.42",
-    "vue-router": "^5.3.1"
+    "vue-router": "^5.3.1",
+    "xss": "^1.0.15"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20261003.1",
