@@ -109,15 +109,28 @@ class ColumnSet {
         }
     }
     public async setColumnObj(columnId: string, columnObj: ColumnObj){
-        //更新根时间
-        columnObj.cacheTime = Date.now();
+        // 更新根时间
+        const now = Date.now(); const OUT_TIME = 24 * 60 * 60 // 24小时（秒）
+        columnObj.cacheTime = now;
         // columnObj.createTime 不操作
+        // write to storage
+        const ttl = columnObj.createTime ?
+            now > columnObj.createTime ? // 已结束
+                OUT_TIME // 超时过期
+                : Math.max(Math.floor((columnObj.createTime - now) / 1000), OUT_TIME) // 未结束：剩余秒数
+            : COLUMN_TTL;
+        await this.storage.setItem(
+            columnId,
+            columnObj,
+            { ttl },
+        ); // 21天缓存
         // cache set
         columnCache.set(columnId, columnObj); // 覆盖缓存
-        // write to storage
-        await this.storage.setItem(columnId, columnObj, { ttl: COLUMN_TTL }); // 21天缓存
         // index set
-        await new ColumnIndex(this.storage).updateIndexColumn(columnId, columnObj);
+        await new ColumnIndex(this.storage).updateIndexColumn(
+            columnId,
+            columnObj,
+        );
         // 返回push的栏目
         return columnObj;
     }

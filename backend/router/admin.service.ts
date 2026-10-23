@@ -1,5 +1,4 @@
 import { Hono } from "hono";
-import { signAccess } from "../middleware/reqAccess";
 import { storageMiddleware } from "../middleware/storage";
 import { adminVerify, jwtSign, jwtAuth, JWT_EXPIRES_SEC } from "../middleware/adminMiddleware";
 import type { deleteColumnRowReq } from "../../shared/types/api/order";
@@ -9,8 +8,6 @@ import ColumnDel from "../module/columns/ColumnDel";
 import ColumnAvailable from "../module/columns/ColumnAvailable";
 
 const admin = new Hono();
-
-admin.use(signAccess); // admin service 全局签名校验
 
 // 登录组：仅 adminVerify 请求体签名校验，不能挂 jwtAuth（否则未登录永远拿不到 token）
 const auth = new Hono();

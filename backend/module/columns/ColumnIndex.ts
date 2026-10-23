@@ -39,9 +39,10 @@ class ColumnIndex {
     }
     private async buildIndexColumn(): Promise<ReturnAllColumn> {
         let columns: ReturnAllColumn = {};
+        const columnGet = new ColumnGet(this.storage);
         for(let i = 0; i < MAX_COLUMN; i++){
             const key = getOffsetIndex(i);
-            const rowResult = await new ColumnGet(this.storage).getDateColumn(key, i) || null;
+            const rowResult = await columnGet.getDateColumn(key, i) || null;
             if(!('data' in rowResult)){
                 continue;
             }

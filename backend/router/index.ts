@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { browserAccess } from "../middleware/reqAccess";
 import { commonResWrapper } from "../middleware/resWrapper";
+import { signAccess } from "../middleware/reqAccess";
 import { uaBlocker } from "@hono/ua-blocker";
 import { aiBots } from "@hono/ua-blocker/ai-bots";
 import encryptRes from '../middleware/encryptRes';
@@ -12,6 +13,7 @@ import adminService from './admin.service';
 const router = new Hono();
 
 router.use(browserAccess);
+router.use(signAccess);
 // encryptRes 须在 commonResWrapper 之前注册：
 // post 处理按注册逆序执行，保证先解包 success 再加密响应体
 router.use(encryptRes);

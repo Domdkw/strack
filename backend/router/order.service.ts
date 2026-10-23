@@ -1,13 +1,10 @@
 import { Hono } from "hono";
-import { signAccess } from "../middleware/reqAccess";
 import { storageMiddleware } from "../middleware/storage";
 import { ColumnGet, ColumnSet, ColumnIndex } from "../module/columns";
 import { verifyUser } from "../module/verifyUser";
 import { MAX_COLUMN } from "../module/columns/common";
 
 const _ = new Hono(); const column = new Hono();
-
-_.use(signAccess); // order service 全局
 
 column
     .use(storageMiddleware)
