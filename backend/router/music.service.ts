@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import type { Platform } from "../../shared/types/base";
-import { platformAccess, signAccess } from "../middleware/reqAccess";
+import { platformAccess, /*signAccess*/ } from "../middleware/reqAccess";
 import { musicSearch } from "../module/musicSearch";
 import { musicUrl } from "../module/musicUrl";
 import { musicInfo } from "../module/musicInfo";
@@ -13,7 +13,7 @@ const [search, strategy] = [
     new Hono(), new Hono(),
 ];
 _.use(
-    '*',
+    '/*',
     memCache({
         max: 100,
         ttl: 5 * 60 * 1000,
@@ -54,7 +54,7 @@ const getMusicFullInfo = async (c: Context) => {
 }
 
 strategy
-    .use(signAccess)
+    //.use(signAccess)
     .get('/listen/url/v1.0', async (c) => c.json({
         code: 0,
         data: await getMusicUrl(c)

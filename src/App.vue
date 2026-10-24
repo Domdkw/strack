@@ -16,16 +16,22 @@
             </div>
         </nav>
 
-        <!-- 页面内容（内部滚动，导航/播放器固定不滚） -->
-        <div class="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto">
+        <!-- 页面内容（内部滚动，导航固定；播放时预留底部空间避免被悬浮播放栏遮挡） -->
+        <div
+            class="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto"
+            :class="player.song ? 'pb-24' : 'pb-0'"
+        >
             <RouterView />
         </div>
 
-        <!-- 底部播放器（常驻占位） -->
-        <Player class="shrink-0" />
+        <!-- 底部悬浮播放器：仅在播放时渲染 -->
+        <Player />
     </div>
 </template>
 
 <script setup>
 import Player from './components/player.vue';
+import { usePlayerStore } from './stores/playerStore';
+
+const player = usePlayerStore();
 </script>

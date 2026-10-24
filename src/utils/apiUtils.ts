@@ -18,7 +18,8 @@ export function genUUID(): string {
 }
 
 export function genSalt(): string {
-    return randomStr(6, 1).join('');
+    const now = Date.now().toString();
+    return now.slice(4, 7);
 }
 
 export interface XhrAccessContext {

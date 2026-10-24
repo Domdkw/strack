@@ -73,7 +73,13 @@ const classOptions = computed<ClassOption[]>(() => {
     return list;
 });
 
-const offsetDay = ref(1); // 默认明天（最早可点日期）
+const offsetDay = ref<number>(initialOffsetDay()); // 默认明天（最早可点日期），若带入口参数则使用它
+
+// 从搜索页带过来的目标日期（仅接受 1..MAX_OFFSET 内的整数）
+function initialOffsetDay(): number {
+    const raw = Number(route.query.offsetDay);
+    return Number.isInteger(raw) && raw >= 1 && raw <= MAX_OFFSET ? raw : 1;
+}
 const className = ref('');
 const userName = ref('');
 const userId = ref('');

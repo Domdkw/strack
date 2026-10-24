@@ -108,7 +108,7 @@ function onToggle(day: CalDay): void {
                         <span v-if="!day"></span>
                         <div
                             v-else
-                            class="relative flex h-24 w-full flex-col items-start rounded-sm p-1.5 text-left transition ring-1"
+                            class="relative flex aspect-square w-full flex-col items-center justify-center rounded-lg p-1 text-left transition ring-1 sm:aspect-auto sm:h-24 sm:items-start sm:justify-start sm:rounded-sm sm:p-1.5"
                             :class="[
                                 day.disabled
                                     ? 'cursor-not-allowed bg-stone-100/50 text-stone-300 ring-stone-200/80'
@@ -138,46 +138,68 @@ function onToggle(day: CalDay): void {
                                 </svg>
                             </button>
 
-                            <!-- 管理员禁用标记 -->
+                            <!-- 管理员禁用标记（桌面端展示，移动端方块空间有限） -->
                             <span
                                 v-if="dayDisabled(day)"
-                                class="absolute bottom-1 right-1 rounded-sm bg-red-100 px-1 text-[9px] font-medium leading-none text-red-500"
+                                class="absolute bottom-1 right-1 hidden rounded-sm bg-red-100 px-1 text-[9px] font-medium leading-none text-red-500 sm:inline"
                             >
                                 已禁用
                             </span>
 
-                            <!-- 日期数字：左上角 -->
-                            <span
-                                class="text-[11px] font-medium leading-none"
-                                :class="[day.isToday ? 'text-amber-700' : 'text-stone-500']"
-                            >
-                                {{ day.day }}
-                                <span v-if="day.isToday" class="ml-0.5 text-[9px]">今天</span>
-                            </span>
+                            <!-- 移动端：日期数字垂直居中固定，今天为实心圆；有栏目时底部小圆点绝对定位不占高度 -->
+                            <div class="sm:hidden">
+                                <span class="absolute inset-0 flex items-center justify-center">
+                                    <span
+                                        class="flex h-7 w-7 items-center justify-center rounded-full text-sm leading-none"
+                                        :class="day.disabled
+                                            ? 'text-stone-300'
+                                            : day.isToday
+                                                ? 'bg-amber-600 font-semibold text-white'
+                                                : 'font-medium text-stone-600'"
+                                    >
+                                        {{ day.day }}
+                                    </span>
+                                </span>
+                                <span
+                                    v-if="day.songs.length > 0"
+                                    class="absolute bottom-1.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full"
+                                    :class="day.disabled ? 'bg-stone-300' : 'bg-amber-500'"
+                                ></span>
+                            </div>
 
-                            <!-- 歌曲封面（小圆圈） -->
-                            <div class="mt-1.5 flex w-full flex-wrap items-center gap-1">
-                                <div
-                                    v-for="(s, si) in day.songs.slice(0, 4)"
-                                    :key="si"
-                                    class="group/art relative h-7 w-7 shrink-0"
+                            <!-- 桌面端：日期数字 + 歌曲封面 -->
+                            <div class="hidden w-full flex-col items-start sm:flex">
+                                <span
+                                    class="text-[11px] font-medium leading-none"
+                                    :class="[day.isToday ? 'text-amber-700' : 'text-stone-500']"
                                 >
-                                    <img
-                                        v-if="s.artwork"
-                                        :src="s.artwork"
-                                        :alt="s.title"
-                                        class="h-7 w-7 rounded-full bg-stone-100 object-cover"
-                                        loading="lazy"
-                                    />
-                                    <div v-else class="h-7 w-7 rounded-full bg-stone-100"></div>
-                                    <!-- hover 时圆圈上显示跟随人数（含点歌人 +1） -->
-                                    <span class="pointer-events-none absolute inset-0 hidden items-center justify-center rounded-full bg-stone-900/45 text-[10px] font-medium leading-none text-white group-hover/art:flex">
-                                        {{ s.followCount + 1 }}
+                                    {{ day.day }}
+                                    <span v-if="day.isToday" class="ml-0.5 text-[9px]">今天</span>
+                                </span>
+
+                                <div class="mt-1.5 flex w-full flex-wrap items-center gap-1">
+                                    <div
+                                        v-for="(s, si) in day.songs.slice(0, 4)"
+                                        :key="si"
+                                        class="group/art relative h-7 w-7 shrink-0"
+                                    >
+                                        <img
+                                            v-if="s.artwork"
+                                            :src="s.artwork"
+                                            :alt="s.title"
+                                            class="h-7 w-7 rounded-full bg-stone-100 object-cover"
+                                            loading="lazy"
+                                        />
+                                        <div v-else class="h-7 w-7 rounded-full bg-stone-100"></div>
+                                        <!-- hover 时圆圈上显示跟随人数（含点歌人 +1） -->
+                                        <span class="pointer-events-none absolute inset-0 hidden items-center justify-center rounded-full bg-stone-900/45 text-[10px] font-medium leading-none text-white group-hover/art:flex">
+                                            {{ s.followCount + 1 }}
+                                        </span>
+                                    </div>
+                                    <span v-if="day.songs.length > 4" class="text-[10px] text-stone-400">
+                                        +{{ day.songs.length - 4 }}
                                     </span>
                                 </div>
-                                <span v-if="day.songs.length > 4" class="text-[10px] text-stone-400">
-                                    +{{ day.songs.length - 4 }}
-                                </span>
                             </div>
                         </div>
                     </template>

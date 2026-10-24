@@ -50,9 +50,12 @@ onMounted(() => {
 </script>
 
 <template>
-    <!-- 底部播放器：sticky 占位，固定高度 -->
-    <footer class="sticky bottom-0 z-50 flex h-[72px] flex-col border-t border-stone-200 bg-white/95 backdrop-blur shadow-sm">
-        <template v-if="player.song">
+    <!-- 底部悬浮播放器：仅在播放时渲染，凸起于页面底部 -->
+    <footer
+        v-if="player.song"
+        class="fixed bottom-4 left-1/2 z-50 w-[calc(100%-2rem)] max-w-3xl -translate-x-1/2 overflow-hidden rounded-2xl border border-stone-200/70 bg-white/95 shadow-xl backdrop-blur"
+    >
+        <div class="flex flex-col">
             <!-- 可拖动进度条 -->
             <div
                 ref="barEl"
@@ -66,16 +69,15 @@ onMounted(() => {
                     :style="{ left: progressPct }"
                 ></div>
             </div>
-            
-            <div class="mx-auto flex w-full max-w-3xl flex-1 items-center gap-3 overflow-hidden px-4">
 
+            <div class="mx-auto flex h-14 w-full items-center gap-3 overflow-hidden px-4">
                 <img
                     v-if="player.song.artwork"
                     :src="player.song.artwork"
                     :alt="player.song.title"
-                    class="h-11 w-11 shrink-0 rounded-lg bg-stone-100 object-cover"
+                    class="h-10 w-10 shrink-0 rounded-lg bg-stone-100 object-cover"
                 />
-                <div v-else class="h-11 w-11 shrink-0 rounded-lg bg-stone-100"></div>
+                <div v-else class="h-10 w-10 shrink-0 rounded-lg bg-stone-100"></div>
 
                 <div class="min-w-0 flex-1">
                     <p class="truncate text-sm font-medium text-stone-800">{{ player.song.title }}</p>
@@ -109,11 +111,6 @@ onMounted(() => {
                     </svg>
                 </button>
             </div>
-        </template>
-
-        <!-- 未播放时的占位（同样固定高度居中） -->
-        <div v-else class="flex flex-1 items-center justify-center text-xs text-stone-300">
-            未在播放
         </div>
     </footer>
 </template>

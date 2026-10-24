@@ -5,12 +5,33 @@ import type { SongItem } from "../../shared/types/musicItem.d.ts";
 import type { Platform } from "../../shared/types/base";
 import { formatTime } from "../utils/formatTime";
 import { usePlayerStore } from "../stores/playerStore";
-
-import { ref } from "vue";
+import { computed, ref } from "vue";
+import { useRoute } from "vue-router";
 
 //import HotSearch from "../components/hotSearch.vue";
 
+const route = useRoute();
 const player = usePlayerStore();
+
+// 从日期详情页带过来的目标日期（offsetDay，1..21 为未来）
+const offsetDay = computed<number | null>(() => {
+    const raw = Number(route.query.offsetDay);
+    return Number.isInteger(raw) && raw >= 1 ? raw : null;
+});
+
+const targetDateLabel = computed<string>(() => {
+    if (offsetDay.value === null) return '';
+    const d = new Date();
+    d.setDate(d.getDate() + offsetDay.value);
+    return `${d.getMonth() + 1}月${d.getDate()}日`;
+});
+
+// 点歌链接参数：带上传入的日期
+function orderQuery(song: SongItem): Record<string, string> {
+    const query: Record<string, string> = { id: String(song.id), platform: song.platform };
+    if (offsetDay.value !== null) query.offsetDay = String(offsetDay.value);
+    return query;
+}
 
 const searchOrder = ref("");
 const platform = ref<Platform>('migu');
@@ -64,7 +85,10 @@ async function loadMore(): Promise<void> {
             <!-- 标题 -->
             <header class="mb-8 text-center">
                 <h1 class="text-3xl font-semibold tracking-wide text-stone-800">搜索音乐</h1>
-                <p class="mt-2 text-sm text-stone-400">输入关键词，发现你喜欢的歌曲</p>
+                <p class="mt-2 text-sm text-stone-400">
+                    输入关键词，发现你喜欢的歌曲
+                    <template v-if="targetDateLabel">（为 {{ targetDateLabel }} 点歌）</template>
+                </p>
             </header>
 
             <!-- 搜索框 -->
@@ -124,7 +148,7 @@ async function loadMore(): Promise<void> {
                             <span class="hidden min-w-0 flex-1 truncate text-xs text-stone-400 sm:block">{{ song.album }}</span>
                             <span class="shrink-0 w-12 text-right font-mono text-xs text-stone-300">{{ formatTime(song.duration) }}</span>
                             <RouterLink
-                                :to="{ path: '/order/new', query: { id: String(song.id), platform: song.platform } }"
+                                :to="{ path: '/order/new', query: orderQuery(song) }"
                                 @click.stop
                                 class="shrink-0 border border-stone-200 px-2 py-1 text-xs text-stone-400 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700"
                                 title="点歌"

@@ -6,7 +6,7 @@ import { MAX_COLUMN } from "../module/columns/common";
 
 const _ = new Hono(); const column = new Hono();
 _.use('/*', (c, next) => {
-    c.header('Cache-Control', `public, no-cache`); //304 public force-etag
+    c.header('Cache-Control', `public, no-cache`); //304 public
     return next();
 });
 
