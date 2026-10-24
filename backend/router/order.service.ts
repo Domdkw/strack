@@ -3,8 +3,10 @@ import { storageMiddleware } from "../middleware/storage";
 import { ColumnGet, ColumnSet, ColumnIndex } from "../module/columns";
 import { verifyUser } from "../module/verifyUser";
 import { MAX_COLUMN } from "../module/columns/common";
+import { blackboardGet } from "../module/blackboard";
+import type { Blackboard } from "../../shared/types/api/order";
 
-const _ = new Hono(); const column = new Hono();
+const _ = new Hono(); const column = new Hono(); const page = new Hono();
 _.use('/*', (c, next) => {
     c.header('Cache-Control', `public, no-cache`); //304 public
     return next();
@@ -49,6 +51,15 @@ column
     })
 ;
 
+page
+    .use(storageMiddleware)
+    .get('/blackboard/v1.0', async (c) => {
+        const kv = c.get('kv');
+        const blackboard: Blackboard = await blackboardGet(kv);
+        return c.json({ data: blackboard });
+    })
+
+_.route('/page', page);
 _.route('/column', column);
 
 export default _;

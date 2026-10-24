@@ -24,7 +24,7 @@ export async function ncmPlayInfo(id: string) {
         album: res.songs[0].album.name,
         title: res.songs[0].name,
         duration: Number(res.songs[0].duration)/1000,
-        artwork: res.songs[0].album.picUrl+'??param=100y100',
+        artwork: res.songs[0].album.picUrl+'?param=100y100',
         //new
         artists: res.songs[0].artists,
     };

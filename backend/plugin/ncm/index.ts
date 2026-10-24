@@ -39,7 +39,7 @@ export async function ncmSearch(text: string, page: number, size: number) {
         }
     );
     return {
-        isEnd: !res.result.hasMore,
+        isEnd: !(res.result?.hasMore ?? true),
         data: res.result.songs.map((item) => formatNcmSong(item)),
     }
 }

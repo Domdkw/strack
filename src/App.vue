@@ -7,12 +7,14 @@
                     to="/"
                     class="px-6 py-1.5 text-sm font-medium text-stone-500 transition hover:bg-amber-50 hover:text-amber-700"
                     exact-active-class="bg-amber-100 text-amber-800"
-                >Order</RouterLink>
+                >表单</RouterLink>
                 <RouterLink
                     to="/search"
                     class="px-6 py-1.5 text-sm font-medium text-stone-500 transition hover:bg-amber-50 hover:text-amber-700"
                     exact-active-class="bg-amber-100 text-amber-800"
-                >Search</RouterLink>
+                >搜索</RouterLink>
+                <!-- 公告按钮（无公告内容时自动隐藏）+ 公告弹窗 -->
+                <Blackboard />
             </div>
         </nav>
 
@@ -31,6 +33,7 @@
 
 <script setup>
 import Player from './components/player.vue';
+import Blackboard from './components/blackboard.vue';
 import { usePlayerStore } from './stores/playerStore';
 
 const player = usePlayerStore();

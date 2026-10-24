@@ -186,6 +186,45 @@ async function toggleDayDisabled(): Promise<void> {
     }
 }
 
+// ===== 公告栏编辑 =====
+// 目前仅支持纯文本，保存时一并提交 textType
+const blackboard = ref<{ text: string; textType: 'plain' }>({ text: '', textType: 'plain' });
+const blackboardMsg = ref('');
+const blackboardLoading = ref(false);
+const showBlackboard = ref(false); // 公告设置弹窗
+
+async function fetchBlackboard(): Promise<void> {
+    try {
+        const res = await xfetch<{ text?: string }>('/api/order/page/blackboard/v1.0', {
+            headers: authHeaders(),
+        });
+        blackboard.value.text = res?.text ?? '';
+    } catch (err) {
+        blackboardMsg.value = getErrorMessage(err);
+        onAuthError(err);
+    }
+}
+
+async function saveBlackboard(): Promise<void> {
+    if (blackboardLoading.value) return;
+    blackboardLoading.value = true;
+    blackboardMsg.value = '';
+    try {
+        await xfetch('/api/admin/page/blackboard/v1.0', {
+            method: 'POST',
+            headers: authHeaders(),
+            body: { text: blackboard.value.text, textType: blackboard.value.textType },
+        });
+        blackboardMsg.value = '公告已保存';
+        await fetchBlackboard();
+    } catch (err) {
+        blackboardMsg.value = getErrorMessage(err);
+        onAuthError(err);
+    } finally {
+        blackboardLoading.value = false;
+    }
+}
+
 // ===== 退出登录 =====
 const loggingOut = ref(false);
 async function onLogout(): Promise<void> {
@@ -211,11 +250,12 @@ function fmtTimestamp(ts: number): string {
 
 onMounted(() => {
     void fetchOverview();
+    void fetchBlackboard();
 });
 </script>
 
 <template>
-    <div class="relative flex-1 overflow-hidden bg-stone-50 text-stone-800">
+    <div class="relative flex-1 bg-stone-50 text-stone-800">
         <div class="relative mx-auto max-w-5xl px-4 pb-10 pt-8">
             <header class="mb-4 flex items-center justify-between">
                 <div>
@@ -231,6 +271,34 @@ onMounted(() => {
                     退出登录
                 </button>
             </header>
+
+            <!-- 公告栏设置入口：点击打开设置弹窗 -->
+            <button
+                type="button"
+                class="mb-4 flex w-full items-center justify-between gap-3 border border-amber-200/70 bg-white px-4 py-2.5 text-left transition hover:border-amber-300 hover:bg-amber-50/50"
+                @click="showBlackboard = true"
+            >
+                <span class="flex items-center gap-2 text-sm font-medium text-stone-700">
+                    <span class="flex h-6 w-6 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.148-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+                        </svg>
+                    </span>
+                    公告栏设置
+                </span>
+                <span class="flex items-center gap-2 text-xs">
+                    <span
+                        class="rounded-full px-2 py-0.5 font-medium"
+                        :class="blackboard.text.trim() ? 'bg-amber-50 text-amber-700' : 'bg-stone-100 text-stone-400'"
+                    >
+                        {{ blackboard.text.trim() ? '公告展示中' : '公告已关闭' }}
+                    </span>
+                    <span class="text-stone-300">编辑</span>
+                    <svg class="h-3.5 w-3.5 text-stone-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                </span>
+            </button>
 
             <!-- 批量操作工具条 -->
             <div class="mb-4 flex flex-wrap items-center gap-3 border border-stone-200/70 bg-white px-4 py-3">
@@ -273,6 +341,73 @@ onMounted(() => {
                 @dayClick="openDay"
             />
         </div>
+
+        <!-- 公告栏设置弹窗 -->
+        <Teleport to="body">
+            <Transition name="bb">
+                <div
+                    v-if="showBlackboard"
+                    class="fixed inset-0 z-[65] flex justify-center bg-stone-900/40 px-4 pt-24"
+                    @click.self="showBlackboard = false"
+                >
+                    <div class="bb-panel h-fit w-full max-w-lg border-t-2 border-amber-400 bg-white shadow-xl">
+                        <header class="flex items-center justify-between border-b border-stone-100 px-5 py-3">
+                            <h2 class="flex items-center gap-2 text-sm font-semibold text-stone-700">
+                                <span class="flex h-6 w-6 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+                                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.148-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+                                    </svg>
+                                </span>
+                                公告栏设置
+                            </h2>
+                            <button
+                                type="button"
+                                class="text-stone-400 transition hover:text-stone-700"
+                                aria-label="关闭"
+                                @click="showBlackboard = false"
+                            >
+                                <svg class="h-4.5 w-4.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </header>
+
+                        <div class="px-5 py-4">
+                            <p class="text-xs text-stone-400">纯文本 · 最多 200 字 · 留空保存则关闭公告</p>
+                            <textarea
+                                v-model="blackboard.text"
+                                rows="5"
+                                maxlength="200"
+                                placeholder="输入公告内容，用户首次访问时会自动弹出"
+                                class="mt-2 w-full resize-y rounded-sm border border-stone-200 px-3 py-2 text-sm text-stone-700 outline-none transition focus:border-amber-300"
+                            ></textarea>
+                            <div class="mt-1 text-right text-xs text-stone-300">{{ blackboard.text.length }}/200</div>
+                        </div>
+
+                        <footer class="flex items-center justify-between gap-3 border-t border-stone-100 bg-stone-50/60 px-5 py-3">
+                            <span class="text-xs text-stone-400">{{ blackboardMsg }}</span>
+                            <span class="flex items-center gap-2.5">
+                                <button
+                                    type="button"
+                                    class="px-2 py-1.5 text-sm text-stone-400 transition hover:text-stone-600"
+                                    @click="showBlackboard = false"
+                                >
+                                    取消
+                                </button>
+                                <button
+                                    type="button"
+                                    :disabled="blackboardLoading"
+                                    class="rounded-sm bg-amber-500 px-4 py-1.5 text-sm font-medium text-white transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-40"
+                                    @click="saveBlackboard"
+                                >
+                                    {{ blackboardLoading ? '保存中…' : '保存公告' }}
+                                </button>
+                            </span>
+                        </footer>
+                    </div>
+                </div>
+            </Transition>
+        </Teleport>
 
         <!-- 子界面：单日歌曲管理浮层 -->
         <Teleport to="body">
@@ -410,3 +545,39 @@ onMounted(() => {
         </Teleport>
     </div>
 </template>
+
+<style scoped>
+.bb-enter-active,
+.bb-leave-active {
+    transition: opacity 0.22s ease;
+}
+
+.bb-enter-from,
+.bb-leave-to {
+    opacity: 0;
+}
+
+.bb-enter-active .bb-panel {
+    animation: bb-drop 0.34s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.bb-leave-active .bb-panel {
+    transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.bb-leave-to .bb-panel {
+    opacity: 0;
+    transform: translateY(-12px);
+}
+
+@keyframes bb-drop {
+    from {
+        opacity: 0;
+        transform: translateY(-26px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+</style>

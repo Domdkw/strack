@@ -34,6 +34,7 @@ export function signAdminBody(admin: Admin, body: object, path: string): object 
         password: admin.password || '',
         schoolName: admin.schoolName || '',
         nonce,
+        timestamp: Date.now(),
     };
     const sign = doSign(reqBody, path, admin.secretKey || '', nonce);
     return {

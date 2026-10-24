@@ -44,7 +44,9 @@ const getMusicUrl = async (c: Context) => {
     const ext = parseExt(extInfo), vip = !!isVip;
     return {
         ...(await musicUrl[platform as Platform](id, ext, vip)),
-        ...(Boolean(fullInfo) ? await musicInfo[platform as Platform](id, ext) : {})
+        ...(fullInfo === "true" || fullInfo === "1"
+            ? await musicInfo[platform as Platform](id, ext)
+            : {}),
     };
 }
 const getMusicFullInfo = async (c: Context) => {

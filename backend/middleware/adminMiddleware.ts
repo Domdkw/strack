@@ -20,14 +20,13 @@ type Env = {
 };
 
 
-const ADMIN_REQ_KEY = ['name', 'userId', 'password', 'schoolName', 'sign', 'nonce'];
+const ADMIN_REQ_KEY = ['name', 'userId', 'password', 'schoolName', 'sign', 'nonce', 'timestamp'];
 export function verifyAdminReq(c: Context, body: AdminReq) {
-    const { name, userId, password, schoolName, sign, nonce } = body;
+    const { name, userId, password, schoolName, sign, nonce, timestamp } = body;
     if(!ADMIN_REQ_KEY.every(key => (body as Record<string, unknown>)[key])){
         return false;
     }
-    const timestamp = c.req.header('X-Timestamp');
-    if(!timestamp || Date.now() - Number(timestamp) > 1000 * 30){ // 30秒内有效
+    if(!Number.isFinite(timestamp) || Date.now() - timestamp > 1000 * 30){ // 30秒内有效
         return false;
     }
     const UA = c.req.header('User-Agent');
@@ -52,8 +51,8 @@ export function verifyAdminReq(c: Context, body: AdminReq) {
 
 
 export const JWT_EXPIRES_SEC = 60 * 60 * 2; // JWT 默认有效期 2 小时
-const getJwtSecret = (c: { env: Env['Bindings'] }): string => {
-    return c.env.JWT_SECRET_KEY;
+const getJwtSecret = (c: Context): string => {
+    return env(c).JWT_SECRET_KEY;
 };
 
 //从 Authorization: Bearer <token> 中验证 JWT，
@@ -88,7 +87,7 @@ export const jwtAuth = createMiddleware<Env>(async (c, next) => {
 
 
 //签发 JWT。payload 会被附加 exp（过期时间）与 iat（签发时间）。
-export const jwtSign = async (c: { env: Env['Bindings'] }, payload: Record<string, unknown>): Promise<string> => {
+export const jwtSign = async (c: Context, payload: Record<string, unknown>): Promise<string> => {
     const secret = getJwtSecret(c);
     if (!secret) {
         throw new Error('jwt secret key not found');

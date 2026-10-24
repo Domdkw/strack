@@ -37,7 +37,7 @@ export function formatMusicItem(it: any): SongItem {
         artist: getSingerName(it.singerList),
         album: it.album,
         duration: it.duration,
-        artwork: "https://d.musicapp.migu.cn" + it.img1,
+        artwork: "https://d.musicapp.migu.cn" + it.img1 + "?param=100y100",
         albumId: it.albumId,
         lrc: encryptLrcUrl(it.lrcUrl, 'ahr3k69s'),
         //vip

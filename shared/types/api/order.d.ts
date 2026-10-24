@@ -31,6 +31,7 @@ export type AdminReq = {
     schoolName: string;
     sign: string;
     nonce: string;
+    timestamp: number;
 }
 export type deleteColumnRowReq = {
     offsetDay: number;
@@ -40,4 +41,8 @@ export type deleteColumnRowReq = {
         userId: string;
         songItem: OrderSong;
     }[]
+}
+export type Blackboard = {
+    text: string;
+    textType: 'plain' | 'markdown' | 'html' | 'iframe';
 }

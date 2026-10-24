@@ -1,11 +1,12 @@
 import { Hono } from "hono";
 import { storageMiddleware } from "../middleware/storage";
 import { adminVerify, jwtSign, jwtAuth, JWT_EXPIRES_SEC } from "../middleware/adminMiddleware";
-import type { deleteColumnRowReq } from "../../shared/types/api/order";
+import type { Blackboard, deleteColumnRowReq } from "../../shared/types/api/order";
 import { setCookie, deleteCookie } from "hono/cookie";
 
 import ColumnDel from "../module/columns/ColumnDel";
 import ColumnAvailable from "../module/columns/ColumnAvailable";
+import { blackboardSet } from "../module/blackboard";
 
 const admin = new Hono();
 admin.use('*', (c, next) => {
@@ -65,6 +66,12 @@ manage
         const kv = c.get("kv");
         const req = await c.req.json<{offsetDay: number, disabled: boolean}[]>();
         const res = await new ColumnAvailable(kv).changeUseable(req);
+        return c.json(res);
+    })
+    .post('/page/blackboard/v1.0', async (c) => {
+        const kv = c.get("kv");
+        const req = await c.req.json<Partial<Blackboard>>();
+        const res = await blackboardSet(kv, req);
         return c.json(res);
     });
 

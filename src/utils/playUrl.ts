@@ -1,5 +1,5 @@
 import xfetch from "../utils/xfetch";
-import CryptoJS from "crypto-js";
+import { enc } from "crypto-js";
 import type { SongItem } from "../../shared/types/musicItem";
 import type { MusicUrl } from "../../shared/types/api/music";
 
@@ -15,7 +15,10 @@ export function getExt(song: SongItem) {
         default:
             return '';
     }
-    return extObj ? CryptoJS.enc.Base64.stringify(CryptoJS.enc.Utf8.parse(JSON.stringify(extObj))) : '';
+    return extObj ? enc.Base64.stringify(enc.Utf8.parse(JSON.stringify(extObj))) : '';
+}
+function isNeedFullInfo(song: SongItem) {
+    return song.platform === 'ncm';
 }
 export async function getPlayRes(song: SongItem) {
     const params: MusicUrl.Req.Song = {
@@ -23,7 +26,7 @@ export async function getPlayRes(song: SongItem) {
         isVip: song.isVip || false,
         platform: song.platform,
         extInfo: getExt(song) || undefined,
-        fullInfo: true,
+        fullInfo: isNeedFullInfo(song),
     }
     return await xfetch('/api/music/strategy/listen/url/v1.0', { params });
 }
