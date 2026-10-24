@@ -4,7 +4,6 @@ import pkg from '../../package.json' with { type: "json" };
 const commonResWrapper = createMiddleware(async (c, next) => {
     await next();
     c.res.headers.set("X-Timestamp", Date.now().toString());
-    c.res.headers.set('Cache-Control', `private, no-cache`); //必走304
     c.res.headers.set('X-Strack-v', pkg.version);
 
     try {

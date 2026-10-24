@@ -20,9 +20,13 @@ _.use(
     })
 );
 
-// end
-
 _.use(platformAccess);
+_.use('/*', (c, next) => {
+    c.header('Cache-Control', `public, s-maxage=3600, max-age=3600`); //304 public cdn
+    return next();
+});
+
+// end
 
 search
     .get('/song/v1.0', async (c) => {

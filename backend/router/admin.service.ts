@@ -8,6 +8,10 @@ import ColumnDel from "../module/columns/ColumnDel";
 import ColumnAvailable from "../module/columns/ColumnAvailable";
 
 const admin = new Hono();
+admin.use('*', (c, next) => {
+    c.header('Cache-Control', `private, no-cache`); //304 
+    return next();
+});
 
 // 登录组：仅 adminVerify 请求体签名校验，不能挂 jwtAuth（否则未登录永远拿不到 token）
 const auth = new Hono();
