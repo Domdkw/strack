@@ -12,11 +12,12 @@ export namespace SendOrder {
         userName: string;
         userId: string;
     }
-    type Req = User & {
+    type OrderItem = {
         offsetDay: number;
         songItem: OrderSong;
         text?: string;
     }
+    export type Req = User & OrderItem;
 }
 export type ColumnEntry = Omit<SendOrder.Req, 'songItem' | 'offsetDay'> & {
     song: SongItem;

@@ -1,10 +1,11 @@
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import { storageMiddleware } from "../middleware/storage";
 import { ColumnGet, ColumnSet, ColumnIndex } from "../module/columns";
 import { verifyUser } from "../module/verifyUser";
-import { MAX_COLUMN } from "../module/columns/common";
+import { verifySetOffset, verifyGetOffset } from "../utils/verifyOffset";
 import { blackboardGet } from "../module/blackboard";
-import type { Blackboard } from "../../shared/types/api/order";
+import type { Blackboard, SendOrder } from "../../shared/types/api/order";
+import { type HlzhjyReq, hlzhjy } from "../plugin/hlzhjy/login";
 
 const _ = new Hono(); const column = new Hono(); const page = new Hono();
 _.use('/*', (c, next) => {
@@ -12,36 +13,43 @@ _.use('/*', (c, next) => {
     return next();
 });
 
+function _verifyPushColumnReq(c: Context, body: any){
+    const songItem = body.songItem || {};
+    const { className='', userName='', userId='' } = body;
+    if(!songItem){
+        return c.json({code: 206, error: 'songItem is required'}, 400);
+    }
+    if(!verifySetOffset(body.offsetDay)){
+        return c.json({code: 202, error: 'offsetDay is required and between 1 and MAX_COLUMN-1'}, 400);
+    }
+    if(!verifyUser(userName, userId, className)){
+        return c.json({code: 207, error: 'userName, userId, className is invalid'}, 400);
+    }
+}
+
 column
     .use(storageMiddleware)
     .get('/lookup/single/v1.0', async (c) => {
         const kv = c.get('kv');
         const offsetDay = Number(c.req.query('offsetDay'));
-        if (!Number.isInteger(offsetDay) || offsetDay < 0 || offsetDay > MAX_COLUMN-1)
-            return c.json({
-                code: 202,
-                error: 'offsetDay is required and between 0 and MAX_COLUMN-1',
-            });
+        if (!verifyGetOffset(offsetDay))
+            return c.json({code: 202, error: 'offsetDay is required and between 0 and MAX_COLUMN-1'});
         const column = await new ColumnGet(kv).getOffsetColumn(offsetDay);
         return c.json(column);
     })
     .post('/modify/push/v1.0', async (c) => {
         const kv = c.get('kv');
-        const body = await c.req.json();
-        const songItem = body.songItem || {};
-        const { className='', userName='', userId='' } = body;
-        if(!songItem){
-            return c.json({code: 206, error: 'songItem is required'});
-        }
-        if(!Number.isInteger(body.offsetDay) || body.offsetDay < 1 || body.offsetDay > MAX_COLUMN-1){
-            return c.json({code: 202, error: 'offsetDay is required and between 1 and MAX_COLUMN-1'});
-        }
-
-        if(!verifyUser(userName, userId, className)){
-            return c.json({code: 207, error: 'userName, userId, className is invalid'});
-        }
+        const body = await c.req.json<Partial<SendOrder.Req>>();
+        _verifyPushColumnReq(c, body);
         const res = await new ColumnSet(kv).setColumn(body);
         return c.json(res);
+    })
+    // hlzhjy.com 支持验证码模块
+    .post('/modify/push/hlzhjy', async (c) => {
+        const kv = c.get('kv');
+        const body = await c.req.json<Partial<HlzhjyReq.Req>>();
+        const {userId, userName} = await hlzhjy.getUserInfo(body);
+        return c.json(await new ColumnSet(kv).setColumn({...body, userId, userName}));
     })
     .get('/index/all/v1.0', async (c) => {
         const kv = c.get('kv');

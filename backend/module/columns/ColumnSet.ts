@@ -24,7 +24,7 @@ class ColumnSet {
     constructor(storage: Storage){
         this.storage = storage;
     }
-    public async setColumn(body: SendOrder.Req){
+    public async setColumn(body: Partial<SendOrder.Req>){
         const columnKeys = Object.keys(body);
         const songItemKeys = Object.keys(body.songItem || {});
         if(!this.requiredKeys.common.every(key => columnKeys.includes(key) && (body as Record<string, unknown>)[key] !== undefined)){
@@ -43,7 +43,8 @@ class ColumnSet {
         }
         body.text = body.text ? xss(body.text) : '';
         const index = getOffsetIndex(body.offsetDay);
-        return await this.pushColumn(index, body);
+        // 上方已校验必填字段，此处收窄为完整请求类型
+        return await this.pushColumn(index, body as SendOrder.Req);
     }
     public async pushColumn(
         columnId: string,
