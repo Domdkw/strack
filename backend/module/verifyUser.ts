@@ -31,7 +31,7 @@ export function verifyClassName(className: string) {
     if(!['3', '1', '2'].includes(d)){
         return false;
     }
-    if(Number(c) < 0 || Number(c) > 30){
+    if(Number(c) < 0 || Number(c) > 20){
         return false;
     }
     return true;
