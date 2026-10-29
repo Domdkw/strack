@@ -43,7 +43,7 @@ export async function blackboardSet(storage: Storage, blackboard: Partial<Blackb
         textType !== 'plain'
         //!["plain", "markdown", "html", "iframe"].includes(textType)
     ) {
-        return { code: 213, error: "text is required or too long" }; // 400 Bad Request
+        return { code: 214, error: "text is required or too long" }; // 400 Bad Request
     }
     const next: Blackboard = {
         text: xss(text),

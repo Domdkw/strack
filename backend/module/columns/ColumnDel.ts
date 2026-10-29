@@ -1,5 +1,5 @@
 import type { Storage } from "unstorage";
-import type { ColumnEntry, deleteColumnRowReq } from "../../../shared/types/api/order";
+import type { ColumnEntry, deleteColumnRowReq, ColumnIdentify } from "../../../shared/types/api/order";
 import {
     type ColumnObj, type ColumnResult,
     getOffsetIndex,
@@ -7,7 +7,7 @@ import {
 import ColumnGet from "./ColumnGet";
 import ColumnSet from "./ColumnSet";
 
-function removeDeleteItems(deleteRows: deleteColumnRowReq["deleteRows"], columnList: ColumnObj['columns']): ColumnEntry[] {
+export function removeDeleteItems(deleteRows: ColumnIdentify[], columnList: ColumnEntry[]): ColumnEntry[] {
     const deleteKeySet = new Set(
         deleteRows.map(
             (item) => `${item.songItem.id}|${item.userId}|${item.userName}|${item.className}`,

@@ -34,16 +34,24 @@ export type AdminReq = {
     nonce: string;
     timestamp: number;
 }
+type ColumnIdentify = {
+    className: string;
+    userName: string;
+    userId: string;
+    songItem: OrderSong;
+}
 export type deleteColumnRowReq = {
     offsetDay: number;
-    deleteRows: {
-        className: string;
-        userName: string;
-        userId: string;
-        songItem: OrderSong;
-    }[]
+    deleteRows: ColumnIdentify[]
 }
 export type Blackboard = {
     text: string;
     textType: 'plain' | 'markdown' | 'html' | 'iframe';
 }
+export type OrderExchange = {
+    from: {
+        offsetDay: number;
+        origin: ColumnIdentify;
+    };
+    targetOffsetDay: number;
+}[]

@@ -8,8 +8,13 @@ import { getCookie } from "hono/cookie";
 
 import { verifyUserId } from "../module/verifyUser";
 
+export type JwtPayload = {
+    userId: string;
+    name: string;
+    role: string;
+}
 type Env = {
-    Variables: { adminBody: AdminReq; jwtPayload: Record<string, unknown> };
+    Variables: { adminBody: AdminReq; jwtPayload: JwtPayload };
     Bindings: {
         JWT_SECRET_KEY: string;
         ADMIN_NAME: string;
@@ -18,7 +23,6 @@ type Env = {
         SCHOOL_NAME: string;
     };
 };
-
 
 const ADMIN_REQ_KEY = ['name', 'userId', 'password', 'schoolName', 'sign', 'nonce', 'timestamp'];
 export function verifyAdminReq(c: Context, body: AdminReq) {

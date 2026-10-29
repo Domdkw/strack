@@ -9,7 +9,7 @@ import { type HlzhjyReq, hlzhjy } from "../plugin/hlzhjy/login";
 
 const _ = new Hono(); const column = new Hono(); const page = new Hono();
 _.use('/*', (c, next) => {
-    c.header('Cache-Control', `public, no-cache`); //304 public
+    c.header('Cache-Control', `public, s-maxage=300, max-age=300`); //304 public
     return next();
 });
 
