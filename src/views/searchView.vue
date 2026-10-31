@@ -102,6 +102,9 @@ async function loadMore(): Promise<void> {
                     >
                         <option value="migu">咪咕</option>
                         <option value="ncm">网易云</option>
+                        <option value="kugou">酷狗</option>
+                        <option value="kuwo">酷我</option>
+                        <option value="bilibili">B站</option>
                     </select>
                     <div class="flex w-full items-center rounded-full border border-stone-200 bg-white px-5 py-3 shadow-sm transition focus-within:border-amber-300 focus-within:shadow-md">
                     <svg class="h-5 w-5 shrink-0 text-stone-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">

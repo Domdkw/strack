@@ -12,6 +12,11 @@ export function getExt(song: SongItem) {
             extObj.songId = song.songId;
             extObj.copyrightId = song.copyrightId;
             break;
+        case 'bilibili':
+            extObj.aid = song.aid;
+            extObj.bvid = song.bvid;
+            extObj.cid = song.cid;
+            break;
         default:
             return '';
     }

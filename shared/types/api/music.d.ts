@@ -23,3 +23,17 @@ export namespace MusicUrl {
         }
     }
 }
+export namespace ShareParse {
+    namespace Req {
+        type Song = {
+            shareUrl: string;
+        }
+    }
+    namespace Res {
+        type Song = {
+            id: string|number;
+            platform: Platform;
+            [key: string]: string;
+        }
+    }
+}
