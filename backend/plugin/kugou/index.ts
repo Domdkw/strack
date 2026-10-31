@@ -79,13 +79,32 @@ export async function kugouSearch(text: string, page: number, size: number) {
     }
 }
 
+// getSongInfo.php 主域名偶尔请求失败或返回空数据，按顺序尝试备用域名
+const KUGOU_INFO_HOSTS = [
+    'https://m.kugou.com',
+    'https://m3ws.kugou.com',
+];
+
 // id 为歌曲 hash
 async function kugouSongInfo(id: string) {
-    // 该接口返回 text/html，ofetch 不会自动解析 JSON，需强制指定
-    return await ofetch<KugouSongInfo>('https://m.kugou.com/app/i/getSongInfo.php', {
-        params: {cmd: 'playInfo', hash: id},
-        parseResponse: JSON.parse,
-    });
+    let lastRes: KugouSongInfo | undefined;
+    let lastError: unknown;
+    for (const host of KUGOU_INFO_HOSTS) {
+        try {
+            // 该接口返回 text/html，ofetch 不会自动解析 JSON，需强制指定
+            const res = await ofetch<KugouSongInfo>(`${host}/app/i/getSongInfo.php`, {
+                params: {cmd: 'playInfo', hash: id},
+                parseResponse: JSON.parse,
+                timeout: 10000,
+            });
+            lastRes = res;
+            if (res.songName || res.fileName) return res;
+        } catch (e) {
+            lastError = e;
+        }
+    }
+    if (lastRes) return lastRes;
+    throw lastError ?? new Error('kugou song info failed');
 }
 
 export async function kugouPlayInfo(id: string) {
