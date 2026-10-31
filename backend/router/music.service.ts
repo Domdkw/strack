@@ -36,8 +36,8 @@ search
     }catch(_){ return c.json({ code: 217, error: 'search failed' })}})
     .get('/song/v2.0', async (c) => { try{
         const { text, page, size, platform } = c.req.query();
-        const res = await musicSearchV2[platform as Platform](text, Number(page), Number(size));
-        return c.json({ code: 0, data: { list: res.data || [], isEnd: res.isEnd || false } });
+        const res: {data: object[]; isEnd: boolean; setting?: object;} = await musicSearchV2[platform as Platform](text, Number(page), Number(size));
+        return c.json({ code: 0, data: { list: res.data || [], isEnd: res.isEnd || false, setting: res?.setting || undefined } });
     }catch(_){ return c.json({ code: 217, error: 'search failed' })}})
 ;
 

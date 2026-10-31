@@ -11,6 +11,18 @@ export namespace MusicSearch {
             platform: Platform;
         }
     }
+    namespace Res {
+        type Song = SongItem[];
+        type Setting = {
+            imgReferrerPolicy?: string;
+            audioReferrerPolicy?: string;
+        }
+        type Song2 = {
+            list: SongItem[];
+            isEnd: boolean;
+            setting?: Setting;
+        }
+    }
 }
 export namespace MusicUrl {
     namespace Req {

@@ -36,20 +36,21 @@ function orderQuery(song: SongItem): Record<string, string> {
 const searchOrder = ref("");
 const platform = ref<Platform>('migu');
 const results = ref<SongItem[]>([]);
+const imgReferrerPolicy = ref<ReferrerPolicy | undefined>(undefined);
 const loading = ref(false);
 const searched = ref(false);
 
 const page = ref(1);
 const maxPage = 10;
 
-async function fetchSongs(targetPage: number): Promise<SongItem[]> {
+async function fetchSongs(targetPage: number): Promise<MusicSearch.Res.Song2> {
     const params: MusicSearch.Req.Song = {
         text: searchOrder.value.trim(),
         page: targetPage,
         size: 20,
         platform: platform.value,
     };
-    return xfetch<SongItem[]>('/api/music/search/song/v1.0', { params });
+    return xfetch<MusicSearch.Res.Song2>('/api/music/search/song/v2.0', { params });
 }
 
 async function onSearch(): Promise<void> {
@@ -57,7 +58,9 @@ async function onSearch(): Promise<void> {
     loading.value = true;
     page.value = 1;
     try {
-        results.value = await fetchSongs(1);
+        const res = await fetchSongs(1);
+        results.value = res.list;
+        imgReferrerPolicy.value = (res.setting?.imgReferrerPolicy || undefined) as ReferrerPolicy | undefined;
         searched.value = true;
     } finally {
         loading.value = false;
@@ -68,9 +71,11 @@ async function loadMore(): Promise<void> {
     if (!searchOrder.value.trim() || loading.value || page.value >= maxPage) return;
     loading.value = true;
     try {
-        const more = await fetchSongs(page.value + 1);
+        const res = await fetchSongs(page.value + 1);
+        if (res.isEnd) return;
         page.value += 1;
-        results.value = results.value.concat(more);
+        results.value = results.value.concat(res.list);
+        imgReferrerPolicy.value = (res.setting?.imgReferrerPolicy || undefined) as ReferrerPolicy | undefined;
     } finally {
         loading.value = false;
     }
@@ -144,7 +149,7 @@ async function loadMore(): Promise<void> {
                                 :alt="song.title"
                                 class="h-12 w-12 shrink-0 rounded-lg bg-stone-100 object-cover"
                                 loading="lazy"
-                            />
+                                v-bind:referrerpolicy="imgReferrerPolicy"                            />
                             <div v-else class="h-6 w-4"></div>
                             <span class="min-w-0 flex-[2] truncate text-sm font-medium text-stone-800">{{ song.title }}</span>
                             <span class="hidden min-w-0 w-24 shrink-0 truncate text-right text-xs text-stone-400 md:block">{{ song.artist }}</span>

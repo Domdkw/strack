@@ -72,6 +72,9 @@ export async function bilibiliSearchV2(text: string, page: number, size: number)
     return {
         isEnd: (res.data?.numResults ?? 0) <= page * size,
         data: (res.data?.result ?? []).map(formatBiliMedia),
+        setting: {
+            imgReferrerPolicy: 'no-referrer',
+        }
     }
 }
 
@@ -97,7 +100,7 @@ export async function bilibiliPlayInfo(id: string) {
     });
     const d = res.data;
     if (!d) throw new Error('bilibili video not found');
-    return formatBiliMedia({
+    const media: Record<string, any> = formatBiliMedia({
         aid: d.aid,
         bvid: d.bvid,
         cid: d.cid,
@@ -106,4 +109,6 @@ export async function bilibiliPlayInfo(id: string) {
         pic: d.pic,
         duration: d.duration,
     });
+    media.setting = { imgReferrerPolicy: 'no-referrer' };
+    return media;
 }

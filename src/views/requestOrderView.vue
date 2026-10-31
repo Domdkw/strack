@@ -18,6 +18,7 @@ const queryPlatform = computed<Platform | ''>(() => (route.query.platform as Pla
 // 远程拉取的完整歌曲信息
 const remoteSong = ref<SongItem | null>(null);
 const fetching = ref(false);
+const imgReferrerPolicy = ref<ReferrerPolicy | undefined>(undefined);
 
 // 点歌歌曲：优先用 URL 参数对应的歌曲（进入页面后从后端获取完整信息），否则用播放器当前歌曲
 const song = computed<SongItem | null>(() => remoteSong.value || player.song);
@@ -34,6 +35,8 @@ async function fetchSongInfo(): Promise<void> {
         const res = await xfetch<SongItem>('/api/music/strategy/fullinfo/v1.0', {
             params: { id: queryId.value, platform: queryPlatform.value },
         });
+        imgReferrerPolicy.value = res.setting?.imgReferrerPolicy || undefined;
+        delete res.setting;
         remoteSong.value = res ?? null;
     } catch (err) {
         errorMsg.value = getErrorMessage(err);
@@ -191,6 +194,7 @@ async function submitOrder(): Promise<void> {
                     v-if="song.artwork"
                     :src="song.artwork"
                     :alt="song.title"
+                    :referrerpolicy="imgReferrerPolicy"
                     class="h-12 w-12 shrink-0 bg-stone-100 object-cover"
                 />
                 <div v-else class="h-12 w-12 shrink-0 bg-stone-100"></div>
