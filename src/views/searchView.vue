@@ -2,7 +2,7 @@
 import xfetch from "../utils/xfetch";
 import type { MusicSearch } from "../../shared/types/api/music.d.ts";
 import type { SongItem } from "../../shared/types/musicItem.d.ts";
-import type { Platform } from "../../shared/types/base";
+import { platforms, type Platform } from "../../shared/types/base";
 import { formatTime } from "../utils/formatTime";
 import { usePlayerStore } from "../stores/playerStore";
 import { computed, ref } from "vue";
@@ -12,6 +12,32 @@ import { useRoute } from "vue-router";
 
 const route = useRoute();
 const player = usePlayerStore();
+
+const defaultPlatform: Platform = 'kuwo';
+
+function loadSetting(): { platform: Platform } {
+    try {
+        const parsed = JSON.parse(localStorage.getItem('searchSetting') || '{}');
+        const saved = parsed?.platform;
+        // 校验本地存储的平台值，避免脏数据导致请求失败或下拉框不回显
+        if (platforms.includes(saved)) return { platform: saved };
+    } catch (_) {
+        console.log('搜索设置解析失败');
+    }
+    return { platform: defaultPlatform };
+}
+
+const setting = loadSetting();
+
+function saveSetting() {
+    try {
+        localStorage.setItem('searchSetting', JSON.stringify({
+            platform: platform.value
+        }));
+    } catch (_) {
+        console.log('搜索设置保存失败');
+    }
+}
 
 // 从日期详情页带过来的目标日期（offsetDay，1..21 为未来）
 const offsetDay = computed<number | null>(() => {
@@ -34,7 +60,7 @@ function orderQuery(song: SongItem): Record<string, string> {
 }
 
 const searchOrder = ref("");
-const platform = ref<Platform>('migu');
+const platform = ref<Platform>(setting?.platform || 'kuwo');
 const results = ref<SongItem[]>([]);
 const imgReferrerPolicy = ref<ReferrerPolicy | undefined>(undefined);
 const loading = ref(false);
@@ -104,6 +130,7 @@ async function loadMore(): Promise<void> {
                         v-model="platform"
                         class="shrink-0 cursor-pointer rounded-full border border-stone-200 bg-white px-4 py-3 text-sm text-stone-600 shadow-sm outline-none transition focus:border-amber-300 focus:shadow-md"
                         aria-label="选择音源"
+                        @change="saveSetting"
                     >
                         <option value="migu">咪咕</option>
                         <option value="ncm">网易云</option>

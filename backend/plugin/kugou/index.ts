@@ -2,12 +2,14 @@ import { ofetch } from "ofetch";
 import type { SongItem } from "../../../shared/types/musicItem";
 
 interface KugouSearchItem {
-    FileHash: string;
-    SongName: string;
-    SingerName: string;
-    AlbumName: string;
-    Duration: number;
-    Image?: string;
+    hash: string;
+    songname: string;
+    singername: string;
+    album_name: string;
+    duration: number | string;
+    trans_param?: {
+        union_cover?: string;
+    };
 }
 
 interface KugouSongInfo {
@@ -24,33 +26,46 @@ interface KugouSongInfo {
 function formatKugouSong(item: KugouSearchItem): SongItem {
     return {
         platform: 'kugou',
-        id: item.FileHash,
-        title: item.SongName.replace(/<\/?em>/g, ''),
-        artist: item.SingerName,
-        album: item.AlbumName,
-        duration: Number(item.Duration) || 0,
-        artwork: item.Image?.replace('{size}', '240'),
+        id: item.hash,
+        title: item.songname.replace(/<\/?em>/g, ''),
+        artist: item.singername,
+        album: item.album_name,
+        duration: Number(item.duration) || 0,
+        artwork: item.trans_param?.union_cover?.replace('{size}', '240'),
         // 音源接口依赖 hash
-        lrc: 'hash:' + item.FileHash,
+        lrc: 'hash:' + item.hash,
     }
 }
 
 export async function kugouSearch(text: string, page: number, size: number) {
-    const res = await ofetch<{data: {lists: KugouSearchItem[]}}>(
-        'https://songsearch.kugou.com/song_search_v2',
+    const res = await ofetch<{data: {info?: KugouSearchItem[], total?: number | string}}>(
+        'http://msearchcdn.kugou.com/api/v3/search/song',
         {
             params: {
+                showtype: 14,
+                pagesize: size,
                 keyword: text,
                 page,
-                pagesize: size,
+                tag_aggr: 1,
+                tagtype: '全部',
+                plat: 0,
+                sver: 5,
+                correct: 1,
+                api_ver: 1,
+                version: 9108,
+                area_code: 1,
+                tag: 1,
+                // 关闭 HTML 标签包裹，直接返回 JSON
+                with_res_tag: 0,
             },
             // 接口返回 text/html，ofetch 不会自动解析 JSON，需强制指定
             parseResponse: JSON.parse,
         }
     );
-    const lists = res.data?.lists ?? [];
+    const lists = res.data?.info ?? [];
+    const total = Number(res.data?.total) || 0;
     return {
-        isEnd: lists.length < size,
+        isEnd: lists.length < size || page * size >= total,
         data: lists.map(formatKugouSong),
     }
 }
