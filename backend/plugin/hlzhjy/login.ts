@@ -21,20 +21,20 @@ export namespace HlzhjyReq {
 export const hlzhjy = {
     baseUrl: 'https://shilongxk.hlzhjy.com',
     verifyReq: (body: Partial<HlzhjyReq.Req>) => {
-        if(!body.captchaKey || !body.captchaCode || !body.userName || !body.userPwd || !body.className){
+        if(!body.offsetDay || !body.captchaKey || !body.captchaCode || !body.userName || !body.userPwd || !body.className){
             return false;
         }
-        return verifySetOffset(body.offsetDay);
+        return verifySetOffset(body.offsetDay as number);
     },
     getUserInfo: async (body: Partial<HlzhjyReq.Req>): Promise<{userId: string, userName: string}> => {
         if(!hlzhjy.verifyReq(body)){
             return {userId: '', userName: ''};
         }
         const res = await hlzhjy.fetchApi({
-            userName: body.userName,
-            userPwd: body.userPwd,
-            captchaKey: body.captchaKey,
-            captchaCode: body.captchaCode,
+            userName: body.userName as string,
+            userPwd: body.userPwd as string,
+            captchaKey: body.captchaKey as string,
+            captchaCode: body.captchaCode as string,
         });
         if(res.userid === '' || res.login_name === ''){
             return {userId: '', userName: ''};

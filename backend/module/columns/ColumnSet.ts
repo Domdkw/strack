@@ -33,7 +33,7 @@ class ColumnSet {
         if(!this.requiredKeys.songItem.every(key => songItemKeys.includes(key) && (body.songItem as Record<string, unknown>)[key] !== undefined)){
             return {code: 208, error: 'songItem keys not found'};
         }
-        const curPlatform = body.songItem.platform;
+        const curPlatform = body?.songItem?.platform;
         if(!curPlatform || !platforms.includes(curPlatform)){
             return {code: 210, error: 'songItem platform is invalid'};
         }
@@ -42,7 +42,7 @@ class ColumnSet {
             return {code: 213, error: 'text is required and between 0 and 50'};
         }
         body.text = body.text ? xss(body.text) : '';
-        const index = getOffsetIndex(body.offsetDay);
+        const index = getOffsetIndex(body.offsetDay as number);
         // 上方已校验必填字段，此处收窄为完整请求类型
         return await this.pushColumn(index, body as SendOrder.Req);
     }

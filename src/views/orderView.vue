@@ -112,9 +112,9 @@ function toggleFollow(idx: number, count: number): void {
 
 function fmtTimestamp(ts: number): string {
     const d = new Date(ts);
-    const hh = String(d.getHours()).padStart(2, '0');
-    const mi = String(d.getMinutes()).padStart(2, '0');
-    return `${hh}:${mi}`;
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${month}/${day}`;
 }
 
 function onPlay(song: SongItem): void {

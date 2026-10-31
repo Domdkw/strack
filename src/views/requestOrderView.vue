@@ -88,7 +88,32 @@ const MAX_TEXT = 50;
 const submitting = ref(false);
 const errorMsg = ref('');
 
-async function onSubmit(): Promise<void> {
+// 验证码弹窗状态：key 用于生成验证码图片，登录时随 captchaKey 一起提交
+const CAPTCHA_BASE_URL = 'https://shilongxk.hlzhjy.com/Api/Login/index.php';
+const showCaptcha = ref(false);
+const captchaKey = ref('');
+const captchaCode = ref('');
+const captchaImgUrl = computed<string>(() => `${CAPTCHA_BASE_URL}?key=${captchaKey.value}`);
+
+function refreshCaptcha(): void {
+    // 随机生成数字 key，与图片地址中的 key 保持一致
+    captchaKey.value = String(Math.floor(100000 + Math.random() * 900000));
+    captchaCode.value = '';
+}
+
+function openCaptcha(): void {
+    errorMsg.value = '';
+    refreshCaptcha();
+    showCaptcha.value = true;
+}
+
+function closeCaptcha(): void {
+    if (submitting.value) return;
+    showCaptcha.value = false;
+}
+
+// 表单校验通过后，先弹出验证码窗口
+function onSubmit(): void {
     if (submitting.value) return;
     if (!song.value) {
         errorMsg.value = '当前没有选择歌曲，请先播放或搜索一首';
@@ -102,16 +127,33 @@ async function onSubmit(): Promise<void> {
         errorMsg.value = `留言最长 ${MAX_TEXT} 字`;
         return;
     }
+    openCaptcha();
+}
+
+// 填写验证码后提交
+async function submitOrder(): Promise<void> {
+    if (submitting.value) return;
+    if (!song.value) {
+        errorMsg.value = '当前没有选择歌曲，请先播放或搜索一首';
+        return;
+    }
+    if (!captchaCode.value.trim()) {
+        errorMsg.value = '请输入验证码';
+        return;
+    }
     submitting.value = true;
     errorMsg.value = '';
     try {
-        await xfetch<{ className: string }>('/api/order/column/modify/push/v1.0', {
+        await xfetch<{ className: string }>('/api/order/column/modify/push/hlzhjy', {
             method: 'POST',
             body: {
                 className: className.value.trim(),
                 userName: userName.value.trim(),
                 userId: userId.value.trim(),
+                userPwd: userId.value.trim(), // 学号作为校园账号密码
                 offsetDay: offsetDay.value,
+                captchaKey: captchaKey.value,
+                captchaCode: captchaCode.value.trim(),
                 ...(text.value.trim() ? { text: text.value.trim() } : {}),
                 songItem: {
                     id: song.value.id,
@@ -122,6 +164,8 @@ async function onSubmit(): Promise<void> {
         void router.push('/');
     } catch (err) {
         errorMsg.value = getErrorMessage(err);
+        // 验证码已被消耗，刷新以便重试
+        refreshCaptcha();
     } finally {
         submitting.value = false;
     }
@@ -230,7 +274,7 @@ async function onSubmit(): Promise<void> {
                     ></textarea>
                 </label>
 
-                <p v-if="errorMsg" class="mt-4 text-sm text-red-500">{{ errorMsg }}</p>
+                <p v-if="errorMsg && !showCaptcha" class="mt-4 text-sm text-red-500">{{ errorMsg }}</p>
 
                 <button
                     type="submit"
@@ -240,6 +284,68 @@ async function onSubmit(): Promise<void> {
                     {{ submitting ? '提交中…' : '提交点歌' }}
                 </button>
             </form>
+
+            <!-- 验证码弹窗：所有信息填写完成后弹出，通过校园账号验证码核验身份 -->
+            <div
+                v-if="showCaptcha"
+                class="fixed inset-0 z-[70] bg-stone-900/40 px-4"
+                @click.self="closeCaptcha"
+            >
+                <div class="mx-auto mt-24 w-full max-w-sm border border-stone-200/70 bg-white p-6">
+                    <header class="mb-5 text-center">
+                        <h2 class="text-lg font-semibold text-stone-800">身份验证</h2>
+                        <p class="mt-1 text-xs text-stone-400">输入校园账号验证码后完成点歌</p>
+                    </header>
+
+                    <form @submit.prevent="submitOrder">
+                        <div class="flex items-center gap-3">
+                            <input
+                                v-model="captchaCode"
+                                type="text"
+                                inputmode="text"
+                                autocomplete="off"
+                                maxlength="6"
+                                placeholder="请输入验证码"
+                                class="min-w-0 flex-1 border border-stone-200 bg-white px-3 py-2.5 text-sm text-stone-700 placeholder-stone-300 outline-none transition focus:border-amber-300"
+                            />
+                            <img
+                                :src="captchaImgUrl"
+                                alt="验证码"
+                                title="点击刷新验证码"
+                                class="h-[30px] w-[100px] shrink-0 cursor-pointer border border-stone-200 bg-white object-cover"
+                                @click="refreshCaptcha"
+                            />
+                        </div>
+                        <button
+                            type="button"
+                            class="mt-2 text-xs text-amber-700 underline underline-offset-2"
+                            @click="refreshCaptcha"
+                        >
+                            看不清？换一张
+                        </button>
+
+                        <p v-if="errorMsg" class="mt-4 text-sm text-red-500">{{ errorMsg }}</p>
+
+                        <div class="mt-6 flex gap-3">
+                            <button
+                                type="button"
+                                :disabled="submitting"
+                                class="flex-1 border border-stone-200 px-4 py-2.5 text-sm text-stone-500 transition hover:bg-stone-50 disabled:opacity-50"
+                                @click="closeCaptcha"
+                            >
+                                取消
+                            </button>
+                            <button
+                                type="submit"
+                                :disabled="submitting || !captchaCode.trim()"
+                                class="flex-1 border border-amber-200 bg-amber-100 px-4 py-2.5 text-sm font-medium text-amber-800 transition hover:bg-amber-200 disabled:opacity-50"
+                            >
+                                {{ submitting ? '验证中…' : '确认提交' }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
 
         </div>
     </div>

@@ -49,6 +49,9 @@ column
         const kv = c.get('kv');
         const body = await c.req.json<Partial<HlzhjyReq.Req>>();
         const {userId, userName} = await hlzhjy.getUserInfo(body);
+        if(!userId || !userName){
+            return c.json({code: 215, error: 'captcha or account is invalid'});
+        }
         return c.json(await new ColumnSet(kv).setColumn({...body, userId, userName}));
     })
     .get('/index/all/v1.0', async (c) => {

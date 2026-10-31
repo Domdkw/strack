@@ -32,8 +32,6 @@
 
 ## 技术栈与整体架构
 
-表格
-
 | 分层 | 技术选型 |
 | --- | --- |
 | 前端 SPA | Vue3（`<script setup>`）+ TypeScript + Vite + TailwindCSS + Pinia + Vue‑Router |
@@ -72,6 +70,10 @@ strack‑school‑song/
 └─ wrangler.jsonc           # Cloudflare配置：Pages、KV命名空间绑定
 ```
 
+## 贡献
+
+项目采用 MIT 开源协议，欢迎贡献代码。前端可以随便改，后端需要根据数据库表结构实现。
+
 ## 本地开发环境
 
 ### 环境依赖
@@ -89,8 +91,6 @@ bun run dev
 ```
 
 ### 项目脚本命令
-
-表格
 
 | 脚本命令 | 功能说明 |
 | --- | --- |
@@ -113,8 +113,6 @@ bun run dev
 本地开发把变量写在项目根目录 `.dev.vars`（gitignore 忽略，不会上传）
 
 ### 全部环境变量清单
-
-表格
 
 | 环境变量 | 作用说明 |
 | --- | --- |
