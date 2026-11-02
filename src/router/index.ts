@@ -37,6 +37,16 @@ const router = createRouter({
                 else next();
             },
         },
+        {
+            // 栏目排版台：日历拖拽日期块 → 横向栏目列，歌曲跨日调整
+            path: '/admin/layout',
+            name: 'adminLayout',
+            component: () => import('../views/columnLayoutView.vue'),
+            beforeEnter: (_to, _from, next) => {
+                if (!localStorage.getItem('admin')) next({ name: 'adminLogin' });
+                else next();
+            },
+        },
     ],
 })
 

@@ -262,14 +262,22 @@ onMounted(() => {
                     <h1 class="text-2xl font-semibold tracking-wide text-stone-800">栏目管理</h1>
                     <p class="mt-1 text-sm text-stone-400">勾选日期批量禁用/启用 · 点击日期管理当天歌曲</p>
                 </div>
-                <button
-                    type="button"
-                    :disabled="loggingOut"
-                    class="rounded-sm border border-stone-200 px-3 py-1.5 text-sm text-stone-500 transition hover:border-red-300 hover:text-red-500"
-                    @click="onLogout"
-                >
-                    退出登录
-                </button>
+                <div class="flex items-center gap-2">
+                    <RouterLink
+                        to="/admin/layout"
+                        class="rounded-sm border border-amber-300 bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-700 transition hover:bg-amber-100"
+                    >
+                        排版台
+                    </RouterLink>
+                    <button
+                        type="button"
+                        :disabled="loggingOut"
+                        class="rounded-sm border border-stone-200 px-3 py-1.5 text-sm text-stone-500 transition hover:border-red-300 hover:text-red-500"
+                        @click="onLogout"
+                    >
+                        退出登录
+                    </button>
+                </div>
             </header>
 
             <!-- 公告栏设置入口：点击打开设置弹窗 -->
