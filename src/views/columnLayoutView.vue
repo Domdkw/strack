@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import xfetch from "../utils/xfetch";
 import { getErrorMessage } from "../utils/apiError";
@@ -152,6 +152,7 @@ async function fetchColumn(offsetDay: number): Promise<void> {
             { params: { offsetDay }, headers: authHeaders() },
         );
         col.entries = res?.columns ?? [];
+        snapshot.value[offsetDay] = col.entries.slice(); // 记录服务端原始顺序，供撤销
     } catch (err) {
         col.error = getErrorMessage(err);
         onAuthError(err);
@@ -171,13 +172,27 @@ function addColumn(offsetDay: number): void {
 
 function removeColumn(offsetDay: number): void {
     layoutCols.value = layoutCols.value.filter(c => c.offsetDay !== offsetDay);
+    // 该列的未保存改动一并丢弃，避免残留悬空引用
+    pending.value = pending.value.filter(p => p.fromDay !== offsetDay && p.targetDay !== offsetDay);
+    delete snapshot.value[offsetDay];
 }
 
 async function refreshCols(days: number[]): Promise<void> {
     await Promise.all([...new Set(days)].map(d => fetchColumn(d)));
 }
 
-// ===== 歌曲交换（核心接口 /api/admin/column/row/exchange/v1.0） =====
+// ===== 暂存：拖拽只改本地预览，点「保存」一次性提交 =====
+type PendingMove = {
+    fromDay: number;
+    origin: ColumnIdentify;
+    targetDay: number;
+    entry: ColumnEntry;
+};
+const pending = ref<PendingMove[]>([]);
+const snapshot = ref<Record<number, ColumnEntry[]>>({}); // 服务端原始顺序
+
+const dirtyCount = computed<number>(() => pending.value.length);
+
 function identifyOf(entry: ColumnEntry): ColumnIdentify | null {
     if (!entry?.song) return null;
     return {
@@ -188,29 +203,68 @@ function identifyOf(entry: ColumnEntry): ColumnIdentify | null {
     };
 }
 
-async function doExchange(fromDay: number, origin: ColumnIdentify, targetDay: number): Promise<void> {
-    if (saving.value) return;
+function colPendingCount(day: number): number {
+    return pending.value.filter(p => p.fromDay === day || p.targetDay === day).length;
+}
+
+// 本地预览：把条目从源列移到目标列尾部（与后端 append 行为一致）
+function stageMove(fromDay: number, targetDay: number, entry: ColumnEntry): void {
+    const origin = identifyOf(entry);
+    if (!origin) {
+        toast('该条目缺少歌曲信息，无法移动');
+        return;
+    }
+    const from = layoutCols.value.find(c => c.offsetDay === fromDay);
+    const to = layoutCols.value.find(c => c.offsetDay === targetDay);
+    if (!from || !to) return;
+
+    const idx = from.entries.indexOf(entry);
+    if (idx < 0) return;
+    if (fromDay === targetDay && idx === from.entries.length - 1) return; // 已在列尾
+
+    from.entries.splice(idx, 1);
+    to.entries.push(entry);
+    pending.value.push({ fromDay, origin, targetDay, entry });
+}
+
+// 批量保存：把暂存的交换一次性提交给 /api/admin/column/row/exchange
+async function saveAll(): Promise<void> {
+    if (saving.value || pending.value.length === 0) return;
     saving.value = true;
+    const count = pending.value.length;
+    const days = [...new Set(pending.value.flatMap(p => [p.fromDay, p.targetDay]))];
     try {
-        const body: OrderExchange = [{ from: { offsetDay: fromDay, origin }, targetOffsetDay: targetDay }];
+        const body: OrderExchange = pending.value.map(p => ({
+            from: { offsetDay: p.fromDay, origin: p.origin },
+            targetOffsetDay: p.targetDay,
+        }));
         const res = await xfetch<{ exchanged: number }>('/api/admin/column/row/exchange/v1.0', {
             method: 'POST',
             headers: authHeaders(),
             body,
         });
         const n = res?.exchanged ?? 0;
-        toast(fromDay === targetDay
-            ? (n > 0 ? `已将 ${n} 首歌曲移到列尾` : '没有歌曲被移动')
-            : (n > 0 ? `已转移 ${n} 首歌曲到 ${dateLabelOf(targetDay)}` : '没有歌曲被转移'));
-        await refreshCols([fromDay, targetDay]);
+        pending.value = [];
+        toast(n > 0 ? `已保存 ${count} 项改动 · 共移动 ${n} 首歌曲` : '没有实际移动的歌曲');
+        await refreshCols(days);
         void fetchOverview();
     } catch (err) {
         toast(getErrorMessage(err));
         onAuthError(err);
-        await refreshCols([fromDay, targetDay]);
     } finally {
         saving.value = false;
     }
+}
+
+// 撤销所有未保存改动：恢复各列的服务端原始顺序
+function undoAll(): void {
+    if (!pending.value.length) return;
+    for (const [day, list] of Object.entries(snapshot.value)) {
+        const col = layoutCols.value.find(c => c.offsetDay === Number(day));
+        if (col && !col.loading) col.entries = list.slice();
+    }
+    pending.value = [];
+    toast('已撤销未保存的改动');
 }
 
 // ===== 拖拽状态（HTML5 DnD，kind 在 dragstart 时记录于组件状态） =====
@@ -293,9 +347,7 @@ function onColDrop(col: LayoutCol, e: DragEvent): void {
     e.stopPropagation();
     if (dragKind.value === 'song' && dragSong.value) {
         const { day, entry } = dragSong.value;
-        const origin = identifyOf(entry);
-        if (origin) void doExchange(day, origin, col.offsetDay);
-        else toast('该条目缺少歌曲信息，无法移动');
+        stageMove(day, col.offsetDay, entry); // 只改本地预览，等待保存
         onDragEnd();
         return;
     }
@@ -344,9 +396,12 @@ const totalSongs = computed<number>(() =>
     layoutCols.value.reduce((sum, c) => sum + c.entries.length, 0),
 );
 
-//onMounted(() => {
-//    void fetchOverview().then(() => addColumn(0)); // 默认铺上今天
-//});
+onMounted(() => {
+    // 首次进入先拉取日历概览（日期块的歌曲数 / 禁用状态），再铺上今天
+    void fetchOverview()/*.then(() => {
+        if (layoutCols.value.length === 0) addColumn(0);
+    })*/;
+});
 </script>
 
 <template>
@@ -372,9 +427,31 @@ const totalSongs = computed<number>(() =>
                         拖动日期块到下方排版区生成栏目列 · 拉动列顶部把手横向排序 · 歌曲可拖到其他日期
                     </p>
                 </div>
-                <div class="hidden shrink-0 text-right font-mono text-xs leading-5 text-stone-400 sm:block">
-                    <p>{{ layoutCols.length }} 列 · {{ totalSongs }} 首</p>
-                    <p :class="saving ? 'text-amber-600' : 'text-emerald-600'">{{ saving ? '同步中…' : '已同步' }}</p>
+                <div class="flex shrink-0 flex-col items-end gap-2">
+                    <div class="text-right font-mono text-xs leading-5 text-stone-400">
+                        <p>{{ layoutCols.length }} 列 · {{ totalSongs }} 首</p>
+                        <p :class="dirtyCount || saving ? 'text-amber-600' : 'text-emerald-600'">
+                            {{ saving ? '保存中…' : dirtyCount ? `${dirtyCount} 项未保存` : '已同步' }}
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button
+                            type="button"
+                            :disabled="dirtyCount === 0 || saving"
+                            class="rounded-sm border border-stone-200 px-3 py-1.5 text-sm text-stone-500 transition hover:border-stone-300 hover:text-stone-700 disabled:cursor-not-allowed disabled:opacity-40"
+                            @click="undoAll"
+                        >
+                            撤销
+                        </button>
+                        <button
+                            type="button"
+                            :disabled="dirtyCount === 0 || saving"
+                            class="rounded-sm bg-amber-500 px-4 py-1.5 text-sm font-medium text-white transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-40"
+                            @click="saveAll"
+                        >
+                            {{ saving ? '保存中…' : dirtyCount ? `保存 ${dirtyCount} 项` : '保存' }}
+                        </button>
+                    </div>
                 </div>
             </header>
 
@@ -444,7 +521,7 @@ const totalSongs = computed<number>(() =>
                         排版区
                     </h2>
                     <p class="hidden text-xs text-stone-400 md:block">
-                        歌曲拖到其他列 = 转移到那天 · 拖回本列 = 移到列尾 · 列顶部把手线 = 横向排序
+                        歌曲拖到其他列 = 转移到那天 · 拖回本列 = 移到列尾 · 列顶部把手线 = 横向排序 · 改动需点右上角保存
                     </p>
                 </div>
 
@@ -499,7 +576,13 @@ const totalSongs = computed<number>(() =>
                                             <span class="ml-1 text-xs font-normal text-stone-400">{{ weekdayOf(col.offsetDay) }}</span>
                                             <span v-if="col.offsetDay === 0" class="ml-1 rounded-sm bg-amber-100 px-1 font-mono text-[9px] font-medium text-amber-700">TODAY</span>
                                         </p>
-                                        <p class="mt-0.5 font-mono text-[10px] text-stone-300">{{ col.entries.length }} SONGS</p>
+                                        <p class="mt-0.5 flex items-center gap-1.5 font-mono text-[10px] text-stone-300">
+                                            {{ col.entries.length }} SONGS
+                                            <span
+                                                v-if="colPendingCount(col.offsetDay) > 0"
+                                                class="rounded-sm bg-amber-100 px-1 leading-none text-amber-700"
+                                            >{{ colPendingCount(col.offsetDay) }} UNSAVED</span>
+                                        </p>
                                     </div>
                                     <button
                                         type="button"
