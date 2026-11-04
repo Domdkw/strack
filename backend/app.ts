@@ -25,7 +25,6 @@ app.notFound(c => {
         {
             success: false,
             error: 'Not Found',
-            message: '请求的资源不存在',
         },
         404
     );

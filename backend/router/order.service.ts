@@ -6,6 +6,7 @@ import { verifySetOffset, verifyGetOffset } from "../utils/verifyOffset";
 import { blackboardGet } from "../module/blackboard";
 import type { Blackboard, SendOrder } from "../../shared/types/api/order";
 import { type HlzhjyReq, hlzhjy } from "../plugin/hlzhjy/login";
+import { renderTable } from "../renderer/table";
 
 const _ = new Hono(); const column = new Hono(); const page = new Hono();
 _.use('/*', (c, next) => {
@@ -69,8 +70,13 @@ page
         const blackboard: Blackboard = await blackboardGet(kv);
         return c.json({ data: blackboard });
     })
+;
 
 _.route('/page', page);
 _.route('/column', column);
 
+_.use(storageMiddleware)
+    .get('/ssr/table/', async (c) => c.html(await renderTable(c.get('kv')))
+    )
+;
 export default _;

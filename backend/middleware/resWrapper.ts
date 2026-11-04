@@ -6,6 +6,10 @@ const commonResWrapper = createMiddleware(async (c, next) => {
     c.res.headers.set("X-Timestamp", Date.now().toString());
     c.res.headers.set('X-Strack-v', pkg.version);
 
+    // 仅处理 JSON 响应，避免读取 HTML / 流响应体导致 ReadableStream 被锁定
+    const contentType = c.res.headers.get('Content-Type') ?? '';
+    if (!contentType.includes('application/json')) return;
+
     try {
         const rawJson = await c.res.json() as Record<string, unknown> & { code?: number };
         if (rawJson.code === undefined){

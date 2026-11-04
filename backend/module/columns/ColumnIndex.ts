@@ -12,12 +12,18 @@ import ColumnGet from "./ColumnGet";
 
 
 // 预览用：每天的歌曲摘要（含跟随人数与禁用状态）
-type AllColumnDay = {
-    songs: { artwork?: string; title: string; followCount: number, userName: string, className: string }[];
+export type AllColumnDay = {
+    songs: {
+        artwork?: string;
+        title: string;
+        followCount: number;
+        userName: string;
+        className: string;
+    }[];
     timestamp: number;
     disabled: boolean;
 };
-type ReturnAllColumn = Record<string, AllColumnDay> & {
+export type ReturnAllColumn = Record<string, AllColumnDay> & {
     cacheHas?: boolean;
     writeToStorage?: boolean;
 };
