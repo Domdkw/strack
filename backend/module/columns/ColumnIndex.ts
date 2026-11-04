@@ -1,4 +1,5 @@
 import type { Storage } from "unstorage";
+import type { ColumnEntry } from "../../../shared/types/api/order";
 import {
     type ColumnObj,
     getOffsetIndex,
@@ -12,7 +13,7 @@ import ColumnGet from "./ColumnGet";
 
 // 预览用：每天的歌曲摘要（含跟随人数与禁用状态）
 type AllColumnDay = {
-    songs: { artwork?: string; title: string; followCount: number }[];
+    songs: { artwork?: string; title: string; followCount: number, userName: string, className: string }[];
     timestamp: number;
     disabled: boolean;
 };
@@ -23,10 +24,12 @@ type ReturnAllColumn = Record<string, AllColumnDay> & {
 let indexColumnCache: ReturnAllColumn = {};
 
 const getIndexColumnValue: (row: ColumnObj) => AllColumnDay = (row: ColumnObj) => ({
-    songs: row.columns.map(col => ({
+    songs: row.columns.map((col: ColumnEntry) => ({
         artwork: col.song.artwork,
         title: col.song.title,
         followCount: col.followUsers?.length ?? 0,
+        userName: col.userName,
+        className: col.className,
     })),
     timestamp: row.createTime,
     disabled: row.disabled === true,

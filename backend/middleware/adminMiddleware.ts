@@ -54,7 +54,7 @@ export function verifyAdminReq(c: Context, body: AdminReq) {
 }
 
 
-export const JWT_EXPIRES_SEC = 60 * 60 * 2; // JWT 默认有效期 2 小时
+export const JWT_EXPIRES_SEC = 60 * 60 * 24 * 7; // JWT 默认有效期 1 week
 const getJwtSecret = (c: Context): string => {
     return env(c).JWT_SECRET_KEY;
 };

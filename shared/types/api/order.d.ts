@@ -19,7 +19,7 @@ export namespace SendOrder {
     }
     export type Req = User & OrderItem;
 }
-export type ColumnEntry = Omit<SendOrder.Req, 'songItem' | 'offsetDay'> & {
+export type ColumnEntry = SendOrder.User & {
     song: SongItem;
     followUsers: SendOrder.User[];
     timestamp: number
