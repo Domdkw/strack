@@ -147,24 +147,19 @@ export async function kuwoPlayInfo(id: string) {
 }
 
 export async function kuwoPlayUrl(id: string) {
-    const params = {
-        "f": "web",
-        "user": "0",
-        "source": "kwplayer_ar_4.4.2.7_B_nuoweida_vh.apk",
-        "type": "convert_url_with_sign",
-        "rid": id,
-        "bitrate": "320",
-        "format": "mp3",
-    }
-    const mobi = await ofetch<{success?: boolean, data?: {url?: string}}>(
-        'https://mobi.kuwo.cn/mobi.s',
+    // 优先走 web playUrl：能直接判断歌曲是否可播放
+    const auth = await getKwAuth();
+    const web = await ofetch<{success?: boolean, data?: {url?: string}}>(
+        `https://kuwo.cn/api/v1/www/music/playUrl?mid=${id}&type=music&httpsStatus=1&reqId=${crypto.randomUUID()}&plat=web_www`,
         {
-            params,
             headers: {
                 'Referer': 'https://kuwo.cn/',
+                'Cookie': auth.cookie,
+                'Secret': auth.secret,
+                'Token': auth.token,
                 'User-Agent': KW_UA,
             },
         }
     ).catch(() => undefined);
-    return {url: mobi?.data?.url?.trim()?.replace('http://', 'https://') || ''};
+    return {url: web?.data?.url?.trim() || ''};
 }
