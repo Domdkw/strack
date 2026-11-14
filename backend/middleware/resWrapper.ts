@@ -1,5 +1,5 @@
 import { createMiddleware } from "hono/factory";
-import pkg from '../../package.json' with { type: "json" };
+import pkg from '../../package.json' assert { type: "json" };
 
 const commonResWrapper = createMiddleware(async (c, next) => {
     await next();
