@@ -1,5 +1,9 @@
+interface PackageJson {
+  version: string;
+  name?: string;
+}
+const pkg = require('../../package.json') as PackageJson;
 import { createMiddleware } from "hono/factory";
-import pkg from '../../package.json' assert { type: "json" };
 
 const commonResWrapper = createMiddleware(async (c, next) => {
     await next();
